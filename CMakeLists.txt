@@ -16,8 +16,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_PREFIX_PATH "${KAHO_SB_INSTALL_PREFIX}")
 
 
-find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network)
-find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core)
+find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 qt_standard_project_setup()
 
 set(PROJECT_SOURCES

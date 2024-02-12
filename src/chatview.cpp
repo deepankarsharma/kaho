@@ -102,7 +102,7 @@ void ChatView::initializeUi() {
     m_view_questions->setModel(model);
     firstColumnVLayout->addWidget(m_view_questions);
 
-    mainLayout->addLayout(firstColumnVLayout);
+    mainLayout->addLayout(firstColumnVLayout, 1);
 
 
     auto secondColumnVLayout = new QVBoxLayout();
@@ -122,8 +122,7 @@ void ChatView::initializeUi() {
     secondColumnVLayout->addWidget(m_view_current_answer, 5);
 
     auto prompt = new PromptEdit();
-    prompt->setFixedHeight(50);
-    secondColumnVLayout->addWidget(prompt);
+    secondColumnVLayout->addWidget(prompt, 1);
 
 
     AIModel *aiModel = new AIModel();
@@ -143,7 +142,7 @@ void ChatView::initializeUi() {
         }
     });
 
-    mainLayout->addLayout(secondColumnVLayout);
+    mainLayout->addLayout(secondColumnVLayout, 3);
 
     setLayout(mainLayout);
 }
