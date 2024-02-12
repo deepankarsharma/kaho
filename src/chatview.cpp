@@ -122,23 +122,25 @@ void ChatView::initializeUi() {
     secondColumnVLayout->addWidget(m_view_current_answer, 5);
 
     auto prompt = new PromptEdit();
+    m_view_prompt = prompt;
     secondColumnVLayout->addWidget(prompt, 1);
 
 
     AIModel *aiModel = new AIModel();
 
     QObject::connect(prompt, &PromptEdit::promptEntered, aiModel, &AIModel::processPrompt);
-    QObject::connect(prompt, &PromptEdit::promptEntered, this, &ChatView::updateQuestionsView);
-
+    QObject::connect(prompt, &PromptEdit::promptEntered, this, &ChatView::promptEntered);
     QObject::connect(aiModel, &AIModel::answerFragmentReceived, [this](const QString &response) {
-        qDebug() << "AI Model Response: " << response << " response.length: " << response.length();
-
-        auto first_colon_index = response.indexOf(':');
-        if (first_colon_index >= 0) {
-            auto rest = response.mid(first_colon_index);
+        qDebug() << "AI Model Response <>: " << response << " response.length: " << response.length();
+        auto first_brace_index = response.indexOf('{');
+        qDebug() << "first_brace_index: " << first_brace_index;
+        if (first_brace_index >= 1) {
+            auto rest = response.mid(first_brace_index-1);
+            qDebug() << "rest: " << rest;
             QJsonDocument jsonDoc = QJsonDocument::fromJson(rest.toUtf8());
-            auto content = jsonDoc["content"];
-            this->m_view_current_answer->setMarkdown(this->m_view_current_answer->toPlainText() + content.toString());
+            //auto content = jsonDoc["choices"][0]["delta"]["Content"];
+            this->m_view_current_answer->setMarkdown(this->m_view_current_answer->toPlainText() + " Hello");
+            //this->m_view_current_answer->setMarkdown("### Hello");
         }
     });
 
@@ -147,7 +149,8 @@ void ChatView::initializeUi() {
     setLayout(mainLayout);
 }
 
-void ChatView::updateQuestionsView(const QString &prompt) {
+void ChatView::promptEntered(const QString &prompt) {
+    m_view_prompt->setText("");
     m_view_current_question->setText(prompt);
     auto m = m_view_questions->model();
     if(m->insertRow(m->rowCount())) {

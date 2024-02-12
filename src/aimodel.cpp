@@ -47,9 +47,9 @@ void AIModel::make_request(const QString& prompt) {
     connect(reply, &QNetworkReply::readyRead, this, [this, reply]() {
         qDebug() << "QNetworkReply::readyRead";
         if (reply->error() == QNetworkReply::NoError) {
+            qDebug() << "AiModel::answerFragmentReceived";
             QByteArray data = reply->readAll(); // Get the response data
             emit answerFragmentReceived(data);
-            qDebug() << data;
         } else {
             qDebug() << "Error:" << reply->errorString();
         }

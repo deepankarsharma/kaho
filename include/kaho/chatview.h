@@ -26,7 +26,7 @@ signals:
     void questionReceived(const QString& question);
 
 public slots:
-    void updateQuestionsView(const QString &prompt);
+    void promptEntered(const QString &prompt);
 private:
     QListView* m_view_questions;
     QTextEdit* m_view_current_question;
