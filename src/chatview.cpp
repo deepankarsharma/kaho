@@ -136,11 +136,9 @@ void ChatView::initializeUi() {
         qDebug() << "first_brace_index: " << first_brace_index;
         if (first_brace_index >= 1) {
             auto rest = response.mid(first_brace_index-1);
-            qDebug() << "rest: " << rest;
             QJsonDocument jsonDoc = QJsonDocument::fromJson(rest.toUtf8());
-            //auto content = jsonDoc["choices"][0]["delta"]["Content"];
-            this->m_view_current_answer->setMarkdown(this->m_view_current_answer->toPlainText() + " Hello");
-            //this->m_view_current_answer->setMarkdown("### Hello");
+            auto content = jsonDoc["choices"][0]["delta"]["content"];
+            this->m_view_current_answer->setMarkdown(this->m_view_current_answer->toPlainText() + content.toString());
         }
     });
 
