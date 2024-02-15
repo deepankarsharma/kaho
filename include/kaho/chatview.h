@@ -11,7 +11,7 @@
 #include <QListView>
 #include <QTextEdit>
 #include <kaho/promptedit.h>
-
+#include <QProgressBar>
 
 class ChatView : public QWidget {
     Q_OBJECT
@@ -24,12 +24,19 @@ private:
 
 signals:
     void questionReceived(const QString& question);
+    void promptEnteredUpdateModels(const QString& question);
+
+
 
 public slots:
-    void promptEntered(const QString &prompt);
+    void promptEnteredUpdateUi(const QString &prompt);
+    void onDownloadFinished();
 private:
+    QProgressBar* m_progress_bar;
     QListView* m_view_questions;
     QTextEdit* m_view_current_question;
     QTextEdit* m_view_current_answer;
     PromptEdit* m_view_prompt;
+    QPushButton* m_downlaod_model_button;
+    QString m_answer;
 };

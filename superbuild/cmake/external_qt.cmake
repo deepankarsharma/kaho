@@ -4,7 +4,7 @@ ExternalProject_Add(qt
   GIT_SHALLOW    ON
   GIT_SUBMODULES ""
   BUILD_IN_SOURCE ON
-  CONFIGURE_COMMAND perl <SOURCE_DIR>/init-repository -module-subset=qtbase,qtsvg,qtimageformats,qtdeclarative && <SOURCE_DIR>/configure -prefix ${SB_INSTALL_PREFIX} -cmake-generator Ninja -static -debug -nomake examples -nomake tests -qt-libpng -qt-zlib -qt-libjpeg -qt-freetype -qt-pcre -qt-harfbuzz -sql-sqlite -qt-sqlite -no-zstd
+  CONFIGURE_COMMAND perl <SOURCE_DIR>/init-repository -f -module-subset=qtbase,qtsvg,qtimageformats,qtdeclarative && <SOURCE_DIR>/configure -prefix ${SB_INSTALL_PREFIX} -cmake-generator Ninja -static -debug -nomake examples -nomake tests -qt-libpng -qt-zlib -qt-libjpeg -qt-freetype -qt-pcre -qt-harfbuzz -sql-sqlite -qt-sqlite -no-zstd
   BUILD_COMMAND cmake --build . --parallel
   INSTALL_COMMAND cmake --install .
 )

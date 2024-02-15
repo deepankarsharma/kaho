@@ -15,7 +15,24 @@ set(KAHO_SB_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/superbuild/third_party")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_PREFIX_PATH "${KAHO_SB_INSTALL_PREFIX}")
 
-
+# install(CODE "
+#     file(GLOB_RECURSE QTPLUGINS
+#       \"\${CMAKE_INSTALL_PREFIX}/${PLUGINS_DEST_PATH}/*${CMAKE_SHARED_LIBRARY_SUFFIX}\"
+#     )
+#     include(BundleUtilities)
+#     fixup_bundle(\"${APPS}\" \"\${QTPLUGINS}\" \"${QT_LIBRARY_DIR};${SPARKLE_LIBRARY}\")
+#     file(GLOB BINARIES
+#       \"${APPS}/Contents/Frameworks/*.framework\"
+#       \"${APPS}/Contents/Frameworks/Sparkle.framework/Resources/Autoupdate.app\"
+#       \"${APPS}/Contents/MacOS/*.dylib\"
+#       \"${APPS}/Contents/PlugIns/*.dylib\"
+#       \"${APPS}/Contents/PlugIns/*/*.dylib\"
+#     )
+#     execute_process(COMMAND codesign --deep -f -s \"Ivan Romanov\" \${BINARIES} \"${APPS}\" WORKING_DIRECTORY \"${APPS}\")
+#     " COMPONENT Runtime
+#   )
+  
+find_package(Sparkle REQUIRED)
 find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 qt_standard_project_setup()
@@ -29,6 +46,11 @@ set(PROJECT_SOURCES
     src/noneditablestringlistmodel.cpp
     src/promptedit.cpp
     src/request.cpp
+    src/server.cpp
+    src/downloader.cpp
+    external/updater/SparkleAutoUpdater.mm
+    external/updater/CocoaInitializer.mm
+    external/updater/AutoUpdater.cpp
     include/kaho/aimodel.h
     include/kaho/chatview.h
     include/kaho/mainwindow.h
@@ -36,6 +58,11 @@ set(PROJECT_SOURCES
     include/kaho/base.h
     include/kaho/file_utils.h
     include/kaho/noneditablestringlistmodel.h
+    include/kaho/server.h
+    include/kaho/downloader.h
+    external/updater/SparkleAutoUpdater.h
+    external/updater/CocoaInitializer.h
+    external/updater/AutoUpdater.h
 )
 
 qt_add_executable(kaho
@@ -77,3 +104,9 @@ qt_add_resources(kaho "kaho"
         ${resource_files}
 )
 qt_finalize_executable(kaho)
+
+
+if (APPLE)
+    set(OSX_FRAMEWORKS "-framework AppKit -framework Carbon -framework Foundation -framework ApplicationServices -framework Sparkle")
+    set_target_properties(${TARGET} PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/Info.plist" LINK_FLAGS "-F/Library/Frameworks -Wl -rpath @loader_path/../Frameworks")
+endif ()

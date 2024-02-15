@@ -1,22 +1,23 @@
-#include <kaho/mainwindow.h>
+/*
+ * Copyright (C) 2008 Remko Troncon
+ */
 
 #include <QApplication>
-#include <QStyleHints>
-#include <QStyleFactory>
+#include <QLabel>
+#include <QDebug>
 
 #ifdef Q_OS_MAC
-#include <updater/CocoaInitializer.h>
-#include <updater/SparkleAutoUpdater.h>
+#include "CocoaInitializer.h"
+#include "SparkleAutoUpdater.h"
 #endif
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
-    QApplication a(argc, argv);
-    MainWindow w;
-    w.setGeometry(QRect(0, 0, 1200, 800));
-    w.show();
+	QApplication app(argc, argv);
+	QLabel l("This is an auto-updating application");
+	l.show();
 
-    AutoUpdater* updater = nullptr;
+	AutoUpdater* updater;
 #ifdef Q_OS_MAC
 	CocoaInitializer initializer;
 	updater = new SparkleAutoUpdater();
@@ -26,6 +27,5 @@ int main(int argc, char *argv[])
         qDebug() << "automaticallyChecksForUpdates" << updater->automaticallyChecksForUpdates();
         qDebug() << "automaticallyDownloadsUpdates" << updater->automaticallyDownloadsUpdates();
 	}
-
-    return a.exec();
+	return app.exec();
 }

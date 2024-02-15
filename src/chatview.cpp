@@ -7,6 +7,7 @@
 #include <QLineEdit>
 #include <QPushButton>
 #include <QListView>
+#include <QDir>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
@@ -15,11 +16,15 @@
 #include <QObject>
 #include <QCoreApplication>
 #include <QTextEdit>
+#include <QPushButton>
 #include <QListWidget>
+#include <QFile>
 #include <kaho/chatview.h>
 #include <kaho/promptedit.h>
 #include <kaho/aimodel.h>
 #include <kaho/noneditablestringlistmodel.h>
+#include <kaho/downloader.h>
+
 
 void readJson()
 {
@@ -107,6 +112,24 @@ void ChatView::initializeUi() {
 
     auto secondColumnVLayout = new QVBoxLayout();
 
+    m_downlaod_model_button = new QPushButton();
+    m_downlaod_model_button->setText("Scratch");
+    QObject::connect(m_downlaod_model_button, &QPushButton::clicked, [&]() {
+        QUrl url("https://huggingface.co/TheBloke/OpenHermes-2.5-Mistral-7B-GGUF/resolve/main/openhermes-2.5-mistral-7b.Q4_K_M.gguf");
+        QString destinationPath = QDir::homePath() + "/kaho_models/openhermes-2.5-mistral-7b.Q4_K_M.gguf";
+        qDebug() << "Downloading: " << url << " to " << destinationPath;
+        QDir().mkpath(QFileInfo(destinationPath).absolutePath());
+        m_downlaod_model_button->setEnabled(false);
+        DownloadThread *downloadThread = new DownloadThread(url, destinationPath);
+        connect(downloadThread, &DownloadThread::downloadFinished, this, &ChatView::onDownloadFinished);
+        downloadThread->start();
+
+    });
+    secondColumnVLayout->addWidget(m_downlaod_model_button);
+
+    m_progress_bar = new QProgressBar();
+    m_progress_bar->setRange(0, 0);
+
     QLabel* questionLabel = new QLabel();
     questionLabel->setText("Question");
     secondColumnVLayout->addWidget(questionLabel);
@@ -128,17 +151,18 @@ void ChatView::initializeUi() {
 
     AIModel *aiModel = new AIModel();
 
-    QObject::connect(prompt, &PromptEdit::promptEntered, aiModel, &AIModel::processPrompt);
-    QObject::connect(prompt, &PromptEdit::promptEntered, this, &ChatView::promptEntered);
+    QObject::connect(prompt, &PromptEdit::promptEntered, this, &ChatView::promptEnteredUpdateUi);
+    QObject::connect(this, &ChatView::promptEnteredUpdateModels, aiModel, &AIModel::processPrompt);
+
     QObject::connect(aiModel, &AIModel::answerFragmentReceived, [this](const QString &response) {
-        qDebug() << "AI Model Response <>: " << response << " response.length: " << response.length();
+        //qDebug() << "AI Model Response <>: " << response << " response.length: " << response.length();
         auto first_brace_index = response.indexOf('{');
-        qDebug() << "first_brace_index: " << first_brace_index;
         if (first_brace_index >= 1) {
             auto rest = response.mid(first_brace_index-1);
             QJsonDocument jsonDoc = QJsonDocument::fromJson(rest.toUtf8());
             auto content = jsonDoc["choices"][0]["delta"]["content"];
-            this->m_view_current_answer->setMarkdown(this->m_view_current_answer->toPlainText() + content.toString());
+            m_answer += content.toString();
+            this->m_view_current_answer->setMarkdown(this->m_answer);
         }
     });
 
@@ -147,12 +171,19 @@ void ChatView::initializeUi() {
     setLayout(mainLayout);
 }
 
-void ChatView::promptEntered(const QString &prompt) {
+void ChatView::promptEnteredUpdateUi(const QString &prompt) {
     m_view_prompt->setText("");
     m_view_current_question->setText(prompt);
+    m_view_current_answer->setText("");
+    m_answer = "";
     auto m = m_view_questions->model();
     if(m->insertRow(m->rowCount())) {
         QModelIndex index = m->index(m->rowCount() - 1, 0);
         m->setData(index, prompt);
     }
+    emit promptEnteredUpdateModels(prompt);
+}
+
+void ChatView::onDownloadFinished() {
+    m_downlaod_model_button->setEnabled(true);
 }
