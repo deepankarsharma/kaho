@@ -3,8 +3,5 @@ steps:
   - label: ":penguin: Build (Linux)"
     agents:
       os: linux
-    commands:
-      - mkdir build
-      - cd build
-      - cmake ..
-      - cmake --build .
+    command:
+      - mkdir build && cd build && cmake && cmake --build .
