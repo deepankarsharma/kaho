@@ -31,8 +31,11 @@ list(APPEND CMAKE_PREFIX_PATH "${KAHO_SB_INSTALL_PREFIX}")
 #     execute_process(COMMAND codesign --deep -f -s \"Ivan Romanov\" \${BINARIES} \"${APPS}\" WORKING_DIRECTORY \"${APPS}\")
 #     " COMPONENT Runtime
 #   )
-  
-find_package(Sparkle REQUIRED)
+
+if (APPLE)
+    find_package(Sparkle REQUIRED)
+endif()
+
 find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 qt_standard_project_setup()

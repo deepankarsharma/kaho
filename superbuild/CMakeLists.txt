@@ -15,4 +15,7 @@ set(SB_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/third_party")
 
 include(external_qt)
 include(external_llama)
-include(external_sparkle)
+
+if (APPLE)
+    include(external_sparkle)    
+endif ()
