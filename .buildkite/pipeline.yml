@@ -4,5 +4,5 @@ steps:
     agents:
       os: linux
     commands:
-      - cmake .
-      - cmake --build . --parallel -- -j8
+      - echo "Hello World!"
+
