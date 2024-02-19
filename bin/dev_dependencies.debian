@@ -1,0 +1,3 @@
+#!/bin/bash
+
+sudo apt install dh-make devscripts build-essential -y

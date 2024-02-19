@@ -13,7 +13,12 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(KAHO_SB_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/superbuild/third_party")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-list(APPEND CMAKE_PREFIX_PATH "${KAHO_SB_INSTALL_PREFIX}")
+
+if (APPLE)
+    list(APPEND CMAKE_PREFIX_PATH "${KAHO_SB_INSTALL_PREFIX}")
+endif()
+
+
 
 # install(CODE "
 #     file(GLOB_RECURSE QTPLUGINS
@@ -36,7 +41,7 @@ if (APPLE)
     find_package(Sparkle REQUIRED)
 endif()
 
-find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
+find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network Core Svg Wayland)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 qt_standard_project_setup()
 
@@ -51,9 +56,6 @@ set(PROJECT_SOURCES
     src/request.cpp
     src/server.cpp
     src/downloader.cpp
-    external/updater/SparkleAutoUpdater.mm
-    external/updater/CocoaInitializer.mm
-    external/updater/AutoUpdater.cpp
     include/kaho/aimodel.h
     include/kaho/chatview.h
     include/kaho/mainwindow.h
@@ -63,10 +65,18 @@ set(PROJECT_SOURCES
     include/kaho/noneditablestringlistmodel.h
     include/kaho/server.h
     include/kaho/downloader.h
-    external/updater/SparkleAutoUpdater.h
-    external/updater/CocoaInitializer.h
-    external/updater/AutoUpdater.h
+
 )
+
+if(APPLE)
+    list(APPEND PROJECT_SOURCES external/updater/SparkleAutoUpdater.mm
+            external/updater/CocoaInitializer.mm
+            external/updater/AutoUpdater.cpp
+            external/updater/SparkleAutoUpdater.h
+            external/updater/CocoaInitializer.h
+            external/updater/AutoUpdater.h
+    )
+endif()
 
 qt_add_executable(kaho
     MANUAL_FINALIZATION
@@ -82,6 +92,8 @@ set_target_properties(kaho PROPERTIES
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
 )
+
+qt_import_plugins(kaho INCLUDE Qt::QWaylandIntegrationPlugin)
 
 include(GNUInstallDirs)
 install(TARGETS kaho

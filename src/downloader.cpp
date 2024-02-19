@@ -56,14 +56,14 @@ void DownloadThread::run()
         emit downloadProgress(bytesRead, totalBytes);
     });
 
-    connect(reply, &QNetworkReply::finished, this, &DownloadManager::downloadFinished);
-    connect(reply, &QIODevice::readyRead, [this, reply]() {
-        if (!file.isOpen()) {
-            file.setFileName("downloaded_file"); // Set your file name here
-            file.open(QIODevice::WriteOnly);
-        }
-        file.write(reply->readAll());
-    });
+    //connect(reply, &QNetworkReply::finished, this, &DownloadManager::downloadFinished);
+//    connect(reply, &QIODevice::readyRead, [this, reply]() {
+//        if (!file.isOpen()) {
+//            file.setFileName("downloaded_file"); // Set your file name here
+//            file.open(QIODevice::WriteOnly);
+//        }
+//        file.write(reply->readAll());
+//    });
 
     QEventLoop loop;
     connect(reply, &QNetworkReply::finished, &loop, &QEventLoop::quit);

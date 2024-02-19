@@ -16,16 +16,18 @@ int main(int argc, char *argv[])
     w.setGeometry(QRect(0, 0, 1200, 800));
     w.show();
 
-    AutoUpdater* updater = nullptr;
+
 #ifdef Q_OS_MAC
+    AutoUpdater* updater = nullptr;
 	CocoaInitializer initializer;
 	updater = new SparkleAutoUpdater();
-#endif
-	if (updater) {
+    if (updater) {
 		updater->checkForUpdates();
         qDebug() << "automaticallyChecksForUpdates" << updater->automaticallyChecksForUpdates();
         qDebug() << "automaticallyDownloadsUpdates" << updater->automaticallyDownloadsUpdates();
 	}
+#endif
+
 
     return a.exec();
 }
