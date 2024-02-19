@@ -4,7 +4,7 @@ steps:
     agents:
       os: linux
     commands:
-      - mkdir build
+      - mkdir -p build
       - cd build
       - cmake ..
       - cmake --build . --parallel -- -j8
