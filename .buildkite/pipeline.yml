@@ -3,7 +3,7 @@ steps:
   - label: ":penguin: Build (Linux)"
     agents:
       os: linux
-    command:
+    commands:
       - mkdir build
       - cd build
       - cmake ..
@@ -13,7 +13,7 @@ steps:
   - label: ":windows: Build (Windows)"
     agents:
       os: windows
-    command:
+    commands:
       - mkdir build
       - cd build
       - cmake -G "Visual Studio 16 2019" -A x64 ..
@@ -23,7 +23,7 @@ steps:
   - label: ":apple: Build (macOS)"
     agents:
       os: macos
-    command:
+    commands:
       - mkdir build
       - cd build
       - cmake ..  # Assumes Xcode or compatible generator
