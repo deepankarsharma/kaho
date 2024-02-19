@@ -7,4 +7,4 @@ steps:
       - mkdir build
       - cd build
       - cmake ..
-      - cmake --build .. --parallel -- -j8
+      - cmake --build . --parallel -- -j8
