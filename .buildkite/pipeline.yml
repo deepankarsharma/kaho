@@ -1,7 +1,15 @@
 steps:
   # Linux Steps
-  - label: ":all: Build"
-    command: ./bin/ci_build.sh 
+  - label: ":linux: Build"
+    agents:
+      os: linux
+    command: ./bin/ci_build.sh
+
+  # OSX Build
+  - label: ":mac: Build"
+    agents:
+      os: macos
+    command: ./bin/ci_build.sh
 
 # - plugins:
 #     - avaly/gcp-secret-manager#v1.1.1:
