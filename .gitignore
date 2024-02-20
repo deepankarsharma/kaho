@@ -59,3 +59,7 @@ third_party
 .vscode
 
 .idea
+
+
+.terraform.lock.hcl
+.terraform

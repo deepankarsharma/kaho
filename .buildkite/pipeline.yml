@@ -1,9 +1,11 @@
 steps:
   # Linux Steps
+  - plugins:
+      - avaly/gcp-secret-manager#v1.1.1:
+          credentials_file: /etc/gcloud-credentials.json
+          env:
+            SECRET_VAR: my-secret-name
+            OTHER_SECRET_VAR: my-other-secret-name
   - label: ":all: Build"
-    command: |-
-      mkdir build
-      cd build
-      cmake ..
-      cmake --build . --parallel -- -j8 
+    command: ./bin/ci_build.sh 
 
