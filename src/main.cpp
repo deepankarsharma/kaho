@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
 #ifdef Q_OS_MAC
     AutoUpdater* updater = nullptr;
 	CocoaInitializer initializer;
-	updater = new SparkleAutoUpdater();
+	updater = new SparkleAutoUpdater("https://kaho.ai/updates/mac");
     if (updater) {
 		updater->checkForUpdates();
         qDebug() << "automaticallyChecksForUpdates" << updater->automaticallyChecksForUpdates();

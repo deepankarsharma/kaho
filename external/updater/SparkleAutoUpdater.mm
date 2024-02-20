@@ -6,7 +6,7 @@
 #include "SparkleAutoUpdater.h"
 
 #include <Cocoa/Cocoa.h>
-#include <Sparkle/Sparkle.h>
+#include <Sparkle.h>
 
 #include <syslog.h>
 static void SYSLOG(const char* format,...)

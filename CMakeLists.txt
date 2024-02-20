@@ -69,12 +69,13 @@ set(PROJECT_SOURCES
 )
 
 if(APPLE)
-    list(APPEND PROJECT_SOURCES external/updater/SparkleAutoUpdater.mm
-            external/updater/CocoaInitializer.mm
-            external/updater/AutoUpdater.cpp
-            external/updater/SparkleAutoUpdater.h
-            external/updater/CocoaInitializer.h
-            external/updater/AutoUpdater.h
+    list(APPEND PROJECT_SOURCES
+        external/updater/SparkleAutoUpdater.mm
+        external/updater/CocoaInitializer.mm
+        external/updater/AutoUpdater.cpp
+        external/updater/SparkleAutoUpdater.h
+        external/updater/CocoaInitializer.h
+        external/updater/AutoUpdater.h
     )
 endif()
 
@@ -82,8 +83,18 @@ qt_add_executable(kaho
     MANUAL_FINALIZATION
     ${PROJECT_SOURCES}
 )
-target_link_libraries(kaho PRIVATE Qt6::Widgets Qt6::Network Qt6::Core)
-target_include_directories(kaho PUBLIC "${PROJECT_SOURCE_DIR}/include")
+
+set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core)
+set(KAHO_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/external")
+
+if (APPLE)
+    list(APPEND KAHO_LIBRARIES ${SPARKLE_LIBRARY})
+    list(APPEND KAHO_INCLUDE_DIRS ${SPARKLE_INCLUDE_DIR})
+endif()
+
+
+target_link_libraries(kaho PRIVATE ${KAHO_LIBRARIES})
+target_include_directories(kaho PUBLIC ${KAHO_INCLUDE_DIRS})
 
 set_target_properties(kaho PROPERTIES
     ${BUNDLE_ID_OPTION}
