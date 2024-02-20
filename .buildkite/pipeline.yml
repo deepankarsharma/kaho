@@ -17,5 +17,5 @@ steps:
           - "amd64"
           - "arm64"
         os:
-          - "windows"
+          - "darwin"
           - "linux"
