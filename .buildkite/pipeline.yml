@@ -6,7 +6,7 @@
 #           OTHER_SECRET_VAR: my-other-secret-name
 
 steps:
-  - label: "💥 Matrix build with adjustments {{matrix.os}} {{matrix.arch}} {{matrix.test}}"
+  - label: "💥 Matrix build with adjustments {{matrix.os}} {{matrix.arch}}"
     env:
       KAHO_OS: "{{matrix.os}}"
       KAHO_ARCH: "{{matrix.arch}}"
@@ -19,6 +19,3 @@ steps:
         os:
           - "windows"
           - "linux"
-        test:
-          - "A"
-          - "B"
