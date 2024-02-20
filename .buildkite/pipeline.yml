@@ -1,8 +1,6 @@
 steps:
   # Linux Steps
-  - label: ":penguin: Build (Linux)"
-    agents:
-      os: linux
+  - label: ":all: Build"
     command: |-
       mkdir build
       cd build
