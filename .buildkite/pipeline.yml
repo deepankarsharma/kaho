@@ -1,21 +1,24 @@
-steps:
-  - label: ":{{matrix.os}}: {{matrix.arch}} build"
-    command: ./bin/ci_build.sh
-    env:
-      KAHO_OS: "{{matrix.os}}"
-      KAHO_ARCH: "{{matrix.arch}}"
-    matrix:
-      setup:
-        arch:
-          - "amd64"
-          - "arm64"
-        os:
-          "darwin"
-          "linux"
-
 # - plugins:
 #     - avaly/gcp-secret-manager#v1.1.1:
 #         credentials_file: /etc/gcloud-credentials.json
 #         env:
 #           SECRET_VAR: my-secret-name
 #           OTHER_SECRET_VAR: my-other-secret-name
+
+steps:
+  - label: "💥 Matrix build with adjustments {{matrix.os}} {{matrix.arch}} {{matrix.test}}"
+    env:
+      KAHO_OS: "{{matrix.os}}"
+      KAHO_ARCH: "{{matrix.arch}}"
+    command: ./bin/ci_build.sh
+    matrix:
+      setup:
+        arch:
+          - "amd64"
+          - "arm64"
+        os:
+          - "windows"
+          - "linux"
+        test:
+          - "A"
+          - "B"
