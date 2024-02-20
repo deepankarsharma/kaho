@@ -6,7 +6,9 @@
 #           OTHER_SECRET_VAR: my-other-secret-name
 
 steps:
-  - label: "💥 Matrix build with adjustments {{matrix.os}} {{matrix.arch}}"
+  - label: "🐧 Linux build"
+    agents:
+      os: linux
     env:
       KAHO_OS: "{{matrix.os}}"
       KAHO_ARCH: "{{matrix.arch}}"
@@ -15,7 +17,18 @@ steps:
       setup:
         arch:
           - "amd64"
+        os:
+          - "linux"
+  - label: "🍎 Mac build"
+    agents:
+      os: darwin
+    env:
+      KAHO_OS: "{{matrix.os}}"
+      KAHO_ARCH: "{{matrix.arch}}"
+    command: ./bin/ci_build.sh
+    matrix:
+      setup:
+        arch:
           - "arm64"
         os:
           - "darwin"
-          - "linux"
