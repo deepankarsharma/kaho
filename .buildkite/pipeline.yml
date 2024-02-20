@@ -3,6 +3,9 @@ steps:
   - label: ":penguin: Build (Linux)"
     agents:
       os: linux
-    commands:
-      - echo "Hello World!"
+    command: |-
+      mkdir build
+      cd build
+      cmake ..
+      cmake --build . --parallel -- -j8 
 
