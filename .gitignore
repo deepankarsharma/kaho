@@ -63,3 +63,5 @@ third_party
 
 .terraform.lock.hcl
 .terraform
+
+.DS_Store

@@ -8,10 +8,21 @@ if [[ "$(uname -s)" != "Darwin" ]]; then
   exit 1
 fi
 
+# Set default build type to Release
+BUILD_TYPE=Release
+
+# Check for -debug argument
+for arg in "$@"; do
+    if [[ $arg == "-debug" ]]; then
+        BUILD_TYPE=Debug
+        break
+    fi
+done
+
 pushd superbuild || exit
   mkdir -p build
   pushd build || exit
-    cmake -DCMAKE_BUILD_TYPE=Release ..
+    cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
     make
   popd || exit # superbuild/build
 popd || exit # superbuild

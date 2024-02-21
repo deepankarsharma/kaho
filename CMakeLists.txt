@@ -9,8 +9,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-
-set(KAHO_SB_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/superbuild/third_party")
+set(KAHO_SB_INSTALL_PREFIX "/opt/kaho/${CMAKE_BUILD_TYPE}")
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -96,10 +95,19 @@ endif()
 target_link_libraries(kaho PRIVATE ${KAHO_LIBRARIES})
 target_include_directories(kaho PUBLIC ${KAHO_INCLUDE_DIRS})
 
+string(TIMESTAMP CURRENT_YEAR "%Y")
+
 set_target_properties(kaho PROPERTIES
     ${BUNDLE_ID_OPTION}
+    MACOSX_BUNDLE_BUNDLE_NAME "Kaho"
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+    MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    MACOSX_BUNDLE_COPYRIGHT "Copyright Deepankar Sharma 2024-${CURRENT_YEAR}"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "io.kaho.kaho"
+    MACOSX_BUNDLE_ICON_FILE "AppIcon.icns"
+    MACOSX_BUNDLE_INFO_STRING ""
+
     MACOSX_BUNDLE TRUE
     WIN32_EXECUTABLE TRUE
 )
@@ -134,5 +142,10 @@ qt_finalize_executable(kaho)
 
 if (APPLE)
     set(OSX_FRAMEWORKS "-framework AppKit -framework Carbon -framework Foundation -framework ApplicationServices -framework Sparkle")
-    set_target_properties(${TARGET} PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/Info.plist" LINK_FLAGS "-F/Library/Frameworks -Wl -rpath @loader_path/../Frameworks")
+    add_custom_target(sparkle_framework
+        COMMAND ${CMAKE_COMMAND} -E copy_directory ${KAHO_SB_INSTALL_PREFIX}/sparkle/Sparkle.framework $<TARGET_FILE_DIR:kaho>/../Frameworks/Sparkle.framework
+        COMMENT "Copying Sparkle.framework to output directory"
+    )
+    add_dependencies(sparkle_framework kaho)
+    set_target_properties(kaho PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/Info.plist" LINK_FLAGS "-F/Library/Frameworks -Wl -rpath @loader_path/../Frameworks")
 endif ()

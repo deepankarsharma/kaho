@@ -27,7 +27,6 @@ steps:
       KAHO_OS: "{{matrix.os}}"
       KAHO_ARCH: "{{matrix.arch}}"
     commands:
-      - ./bin/ci_mac_superbuild.sh
       - ./bin/ci_build.sh
     matrix:
       setup:

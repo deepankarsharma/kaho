@@ -10,9 +10,8 @@ set(CMAKE_MODULE_PATH
 )
 
 include(ExternalProject)
-include(superbuild)
 
-set(SB_INSTALL_PREFIX "${PROJECT_SOURCE_DIR}/third_party")
+set(SB_INSTALL_PREFIX "/opt/kaho/${CMAKE_BUILD_TYPE}")
 
 include(external_qt)
 include(external_llama)

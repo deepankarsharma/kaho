@@ -1,0 +1,15 @@
+steps:
+  - label: "🍎 Mac build"
+    agents:
+      os: darwin
+    env:
+      KAHO_OS: "{{matrix.os}}"
+      KAHO_ARCH: "{{matrix.arch}}"
+    commands:
+      - ./bin/ci_mac_superbuild.sh
+    matrix:
+      setup:
+        arch:
+          - "arm64"
+        os:
+          - "darwin"
