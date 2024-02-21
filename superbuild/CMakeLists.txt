@@ -12,6 +12,9 @@ set(CMAKE_MODULE_PATH
 include(ExternalProject)
 
 set(SB_INSTALL_PREFIX "/opt/kaho/${CMAKE_BUILD_TYPE}")
+if(NOT EXISTS "${SB_INSTALL_PREFIX}")
+    file(MAKE_DIRECTORY "${SB_INSTALL_PREFIX}")
+endif()
 
 include(external_qt)
 include(external_llama)
