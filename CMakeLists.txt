@@ -147,5 +147,5 @@ if (APPLE)
         COMMENT "Copying Sparkle.framework to output directory"
     )
     add_dependencies(sparkle_framework kaho)
-    set_target_properties(kaho PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/Info.plist" LINK_FLAGS "-F/Library/Frameworks -Wl -rpath @loader_path/../Frameworks")
+    set_target_properties(kaho PROPERTIES LINK_FLAGS "-F/Library/Frameworks -Wl -rpath @loader_path/../Frameworks")
 endif ()
