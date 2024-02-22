@@ -5,7 +5,7 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QNetworkAccessManager>
-
+#include <QSettings>
 
 class MainWindow : public QMainWindow
 {
@@ -16,10 +16,12 @@ public:
     ~MainWindow();
 
     void make_request(const QString& prompt);
+    bool is_first_run() const;
+    bool mark_first_run();
 
 private:
     QHBoxLayout* m_layout;
     QToolBar* m_toolbar;
-
+    QSettings m_settings;
 };
 

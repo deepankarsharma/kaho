@@ -9,14 +9,13 @@
 
 
 MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
+    : QMainWindow(parent), m_settings("kaho.ai", "kaho")
 {
     m_toolbar = new QToolBar("toolbar");
     m_toolbar->setIconSize(QSize(48, 48));
     m_toolbar->setMovable(false);
     m_toolbar->setAllowedAreas(Qt::LeftToolBarArea);
     m_toolbar->setOrientation(Qt::Vertical);
-
     auto cwidget = new QStackedWidget();
     auto chat_view = new ChatView();
 
@@ -51,5 +50,12 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow() {}
 
+bool MainWindow::is_first_run() const {
+    return m_settings.contains("initialized");
+}
+
+bool MainWindow::mark_first_run() {
+    m_settings.setValue("initialized", true);
+}
 
 
