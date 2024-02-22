@@ -12,6 +12,7 @@ public:
     virtual ~AutoUpdater();
 
     virtual void checkForUpdates() = 0;
+    virtual void checkForUpdatesInBackground() = 0;
 
     virtual void setAutomaticallyChecksForUpdates(bool on) = 0;
     virtual bool automaticallyChecksForUpdates() = 0;

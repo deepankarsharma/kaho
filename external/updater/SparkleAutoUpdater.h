@@ -17,6 +17,7 @@ class SparkleAutoUpdater : public AutoUpdater
 		~SparkleAutoUpdater();
 
 		void checkForUpdates() override;
+        void checkForUpdatesInBackground() override;
 
 		void setAutomaticallyChecksForUpdates(bool on) override;
 		bool automaticallyChecksForUpdates() override;

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kaho.ai Downloads</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css"> 
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Inter&family=Noto+Serif+Display&display=swap">
+    <style>
+        body {
+            background-color: #FF7A3A; /* Bauhaus orange */
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+        }
+
+        h1 {
+            font-family: 'Noto Serif Display', serif; 
+            font-weight: bold; 
+            font-size: 48px;
+            margin-bottom: 20px;
+            color: black; 
+        }
+
+        .download-links {
+            display: flex;
+            gap: 30px;
+        }
+
+        a {
+            font-size: 48px; 
+            color: black;
+            text-decoration: none;
+        }
+
+        .coming-soon {
+            margin-top: 30px; /* Adjust spacing as needed */
+        }
+
+        .disabled i { /* Target the icon within the Linux link */
+            color: gray
+        }
+    </style>
+</head>
+<body>
+    <h1>kaho.ai</h1>
+
+    <div class="download-links">
+        <a href="#"><i class="fab fa-apple"></i></a> 
+        <a href="#" class="disabled"><i class="fab fa-windows"></i></a> 
+        <a href="#" class="disabled"><i class="fab fa-linux"></i></a> 
+    </div>
+
+    <p class="coming-soon">Linux and Windows support coming soon!</p> 
+</body>
+</html>

@@ -13,8 +13,8 @@ for arg in "$@"; do
     fi
 done
 
-mkdir build
-pushd build
+mkdir build-${BUILD_TYPE}
+pushd build-${BUILD_TYPE}
     cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
     cmake --build . --parallel
 popd
