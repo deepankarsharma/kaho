@@ -10,6 +10,7 @@ namespace kaho {
         m_process = new QProcess(this);
         m_process->setReadChannel(QProcess::StandardOutput);
         m_process->setProcessChannelMode(QProcess::MergedChannels);
+        m_process->setWorkingDirectory(QCoreApplication::applicationDirPath());
         QStringList arguments;
         auto model_file_path = LocalModelRegistry::resolve_filename(url);
         arguments << "-m" << model_file_path;

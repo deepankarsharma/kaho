@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 # Make sure you bump version in bin/base.sh when you change this
 # For more details refer to bumping_versions playbook
-project(kaho VERSION 0.2.1 LANGUAGES CXX)
+project(kaho VERSION 0.3.3 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -13,33 +13,13 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 set(KAHO_SB_INSTALL_PREFIX "/opt/kaho/${CMAKE_BUILD_TYPE}")
 set(KAHO_DEPLOYMENT_BUILD OFF)
-set(KAHO_MAC_SIGN_APP OFF)
-set(KAHO_MAC_BUILD_DMG ON)
+option(KAHO_MAC_SIGN_APP "Option for signing the Mac app" OFF)
+set(KAHO_MAC_BUILD_DMG OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 if (APPLE)
     list(APPEND CMAKE_PREFIX_PATH "${KAHO_SB_INSTALL_PREFIX}")
-endif()
-
-# install(CODE "
-#     file(GLOB_RECURSE QTPLUGINS
-#       \"\${CMAKE_INSTALL_PREFIX}/${PLUGINS_DEST_PATH}/*${CMAKE_SHARED_LIBRARY_SUFFIX}\"
-#     )
-#     include(BundleUtilities)
-#     fixup_bundle(\"${APPS}\" \"\${QTPLUGINS}\" \"${QT_LIBRARY_DIR};${SPARKLE_LIBRARY}\")
-#     file(GLOB BINARIES
-#       \"${APPS}/Contents/Frameworks/*.framework\"
-#       \"${APPS}/Contents/Frameworks/Sparkle.framework/Resources/Autoupdate.app\"
-#       \"${APPS}/Contents/MacOS/*.dylib\"
-#       \"${APPS}/Contents/PlugIns/*.dylib\"
-#       \"${APPS}/Contents/PlugIns/*/*.dylib\"
-#     )
-#     execute_process(COMMAND codesign --deep -f -s \"Ivan Romanov\" \${BINARIES} \"${APPS}\" WORKING_DIRECTORY \"${APPS}\")
-#     " COMPONENT Runtime
-#   )
-
-if (APPLE)
     find_package(Sparkle REQUIRED)
 endif()
 

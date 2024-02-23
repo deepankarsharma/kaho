@@ -24,6 +24,11 @@ if [[ $BUILD_TYPE == "Debug" ]]; then
     DEBUG_FLAG="--debug"
 fi
 
-"$CURDIR"/ci_build.sh $DEBUG_FLAG
-"$CURDIR/"
+mkdir build-${BUILD_TYPE}
+pushd build-${BUILD_TYPE}
+    "$CURDIR"/ci_build.sh $DEBUG_FLAG
+    "$CURDIR"/mac_build_dmg.sh
+    "$CURDIR"/mac_gen_appcast.sh
+    rclone sync /opt/kaho/mac_releases r2:kaho-mac-updates
+popd
 

@@ -13,8 +13,5 @@ for arg in "$@"; do
     fi
 done
 
-mkdir build-${BUILD_TYPE}
-pushd build-${BUILD_TYPE}
-    cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ..
-    cmake --build . --parallel
-popd
+cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DKAHO_MAC_SIGN_APP=ON ..
+cmake --build . --parallel
