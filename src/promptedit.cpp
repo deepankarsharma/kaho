@@ -5,6 +5,7 @@
 #include <QApplication>
 #include <QPalette>
 #include <QColor>
+#include <QPainter>
 
 namespace kaho {
     QColor getLighterBackgroundColor() {
@@ -22,14 +23,7 @@ namespace kaho {
     }
 
     PromptEdit::PromptEdit() {
-        // Get the current palette
-        QPalette palette = this->palette();
-
-        // Change the background color of the palette
-        palette.setColor(QPalette::Base, getLighterBackgroundColor());
-
-        // Set the modified palette back to the widget
-        this->setPalette(palette);
+        this->setPlaceholderText("Type a question");
     }
 
     void PromptEdit::keyPressEvent(QKeyEvent *event) {

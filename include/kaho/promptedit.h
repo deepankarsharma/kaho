@@ -11,6 +11,7 @@ namespace kaho {
         void keyPressEvent(QKeyEvent *event) override;
     signals:
         void promptEntered(const QString &text);
+
     };
 
 } // namespace kaho

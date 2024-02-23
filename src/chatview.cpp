@@ -97,10 +97,6 @@ namespace kaho {
 
         auto firstColumnVLayout = new QVBoxLayout();
 
-        QLabel *questionsLabel = new QLabel();
-        questionsLabel->setText("Questions");
-        firstColumnVLayout->addWidget(questionsLabel);
-
         m_view_questions = new QListView();
         auto model = new NonEditableStringListModel();
         m_view_questions->setModel(model);
@@ -114,17 +110,6 @@ namespace kaho {
         m_progress_bar = new QProgressBar();
         m_progress_bar->setRange(0, 0);
 
-        QLabel *questionLabel = new QLabel();
-        questionLabel->setText("Question");
-        secondColumnVLayout->addWidget(questionLabel);
-
-        m_view_current_question = new QTextEdit();
-        secondColumnVLayout->addWidget(m_view_current_question, 2);
-
-        QLabel *answerLabel = new QLabel();
-        answerLabel->setText("Answer");
-        secondColumnVLayout->addWidget(answerLabel);
-
         m_view_current_answer = new QTextEdit();
         secondColumnVLayout->addWidget(m_view_current_answer, 5);
 
@@ -133,7 +118,7 @@ namespace kaho {
         secondColumnVLayout->addWidget(prompt, 1);
 
 
-        AIModel *aiModel = new AIModel();
+        auto aiModel = new AIModel();
 
         QObject::connect(prompt, &PromptEdit::promptEntered, this, &ChatView::promptEnteredUpdateUi);
         QObject::connect(this, &ChatView::promptEnteredUpdateModels, aiModel, &AIModel::processPrompt);
@@ -157,7 +142,6 @@ namespace kaho {
 
     void ChatView::promptEnteredUpdateUi(const QString &prompt) {
         m_view_prompt->setText("");
-        m_view_current_question->setText(prompt);
         m_view_current_answer->setText("");
         m_answer = "";
         auto m = m_view_questions->model();

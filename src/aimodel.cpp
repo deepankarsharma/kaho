@@ -45,9 +45,7 @@ namespace kaho {
 
 
         connect(reply, &QNetworkReply::readyRead, this, [this, reply]() {
-            qDebug() << "QNetworkReply::readyRead";
             if (reply->error() == QNetworkReply::NoError) {
-                qDebug() << "AiModel::answerFragmentReceived";
                 QByteArray data = reply->readAll(); // Get the response data
                 emit answerFragmentReceived(data);
             } else {
@@ -55,44 +53,8 @@ namespace kaho {
             }
         });
         connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-            qDebug() << "QNetworkReply::finished";
             reply->deleteLater();
         });
 
     }
-
-// void AIModel::make_request(const QString& prompt) {
-//     QNetworkRequest request(QUrl("http://localhost:8080/completion"));
-//     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
-//     request.setRawHeader("Authorization", "Bearer no-key");
-
-//     QJsonObject dataObject;
-//     dataObject["stream"] = true;
-//     dataObject["temperature"] = 0.1;
-//     dataObject["n_predict"] = 1800;
-//     dataObject["prompt"] = prompt;
-//     dataObject["model"] = "gpt-3.5-turbo";
-
-//     QJsonDocument doc(dataObject);
-//     QByteArray jsonData = doc.toJson();
-
-//     QNetworkReply *reply = m_network_manager->post(request, jsonData);
-
-
-//     connect(reply, &QNetworkReply::readyRead, this, [this, reply]() {
-//         qDebug() << "QNetworkReply::readyRead";
-//         if (reply->error() == QNetworkReply::NoError) {
-//             QByteArray data = reply->readAll(); // Get the response data
-//             emit answerReceived(data);
-//             qDebug() << data;
-//         } else {
-//             qDebug() << "Error:" << reply->errorString();
-//         }
-//     });
-//     connect(reply, &QNetworkReply::finished, this, [this, reply]() {
-//         qDebug() << "QNetworkReply::finished";
-//         reply->deleteLater();
-//     });
-
-// }
 } // namespace kaho

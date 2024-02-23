@@ -16,6 +16,14 @@ set(KAHO_DEPLOYMENT_BUILD OFF)
 option(KAHO_MAC_SIGN_APP "Option for signing the Mac app" OFF)
 set(KAHO_MAC_BUILD_DMG OFF)
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        message(STATUS "Enabling sanitizers for debug build...")
+        add_compile_options($<$<CONFIG:Debug>:-fsanitize=address,undefined>)
+        add_link_options($<$<CONFIG:Debug>:-fsanitize=address,undefined>)
+    endif()
+endif()
+
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 if (APPLE)
@@ -35,7 +43,6 @@ set(PROJECT_SOURCES
     src/mainwindow.cpp
     src/noneditablestringlistmodel.cpp
     src/promptedit.cpp
-    src/request.cpp
     src/server.cpp
     src/downloader.cpp
         src/errors.cpp
@@ -126,6 +133,8 @@ set(resource_files
     "images/icons8-server.svg"
     "images/icons8-settings.svg"
     "images/icons8-chat.svg"
+        "images/icons8-enter.svg"
+        "images/icons8-send.svg"
 )
 
 qt_add_resources(kaho "kaho"

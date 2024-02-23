@@ -35,7 +35,6 @@ namespace kaho {
     private:
         QProgressBar* m_progress_bar;
         QListView* m_view_questions;
-        QTextEdit* m_view_current_question;
         QTextEdit* m_view_current_answer;
         PromptEdit* m_view_prompt;
         QString m_answer;
