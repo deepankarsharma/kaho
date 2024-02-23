@@ -13,30 +13,32 @@
 #include <kaho/promptedit.h>
 #include <QProgressBar>
 
-class ChatView : public QWidget {
+namespace kaho {
+    class ChatView : public QWidget {
     Q_OBJECT
 
-public:
-    ChatView(QWidget *parent = nullptr);
+    public:
+        ChatView(QWidget *parent = nullptr);
 
-private:
-    void initializeUi();
+    private:
+        void initializeUi();
 
-signals:
-    void questionReceived(const QString& question);
-    void promptEnteredUpdateModels(const QString& question);
+    signals:
+        void questionReceived(const QString& question);
+        void promptEnteredUpdateModels(const QString& question);
 
 
 
-public slots:
-    void promptEnteredUpdateUi(const QString &prompt);
-    void onDownloadFinished();
-private:
-    QProgressBar* m_progress_bar;
-    QListView* m_view_questions;
-    QTextEdit* m_view_current_question;
-    QTextEdit* m_view_current_answer;
-    PromptEdit* m_view_prompt;
-    QPushButton* m_downlaod_model_button;
-    QString m_answer;
-};
+    public slots:
+        void promptEnteredUpdateUi(const QString &prompt);
+        void onDownloadFinished();
+    private:
+        QProgressBar* m_progress_bar;
+        QListView* m_view_questions;
+        QTextEdit* m_view_current_question;
+        QTextEdit* m_view_current_answer;
+        PromptEdit* m_view_prompt;
+        QString m_answer;
+    };
+
+}

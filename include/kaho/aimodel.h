@@ -2,19 +2,21 @@
 #include <QObject>
 #include <QNetworkAccessManager>
 
-class AIModel : public QObject
-{
+namespace kaho {
+    class AIModel : public QObject
+    {
     Q_OBJECT
-public:
-    explicit AIModel(QObject *parent = nullptr);
-private:
-    void make_request(const QString& prompt);
-signals:
-    void answerFragmentReceived(const QString &text);
+    public:
+        explicit AIModel(QObject *parent = nullptr);
+    private:
+        void make_request(const QString& prompt);
+    signals:
+        void answerFragmentReceived(const QString &text);
 
-public slots:
-    void processPrompt(const QString &prompt);
+    public slots:
+        void processPrompt(const QString &prompt);
 
-private:
-    QNetworkAccessManager* m_network_manager;
-};
+    private:
+        QNetworkAccessManager* m_network_manager;
+    };
+}

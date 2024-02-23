@@ -10,10 +10,11 @@ set(CMAKE_AUTORCC ON)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
+message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 set(KAHO_SB_INSTALL_PREFIX "/opt/kaho/${CMAKE_BUILD_TYPE}")
 set(KAHO_DEPLOYMENT_BUILD OFF)
-set(KAHO_BUILD_DMG ON)
+set(KAHO_MAC_SIGN_APP OFF)
+set(KAHO_MAC_BUILD_DMG ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
@@ -57,6 +58,8 @@ set(PROJECT_SOURCES
     src/request.cpp
     src/server.cpp
     src/downloader.cpp
+        src/errors.cpp
+        src/localmodelregistry.cpp
     include/kaho/aimodel.h
     include/kaho/chatview.h
     include/kaho/mainwindow.h
@@ -66,6 +69,8 @@ set(PROJECT_SOURCES
     include/kaho/noneditablestringlistmodel.h
     include/kaho/server.h
     include/kaho/downloader.h
+        include/kaho/errors.h
+        include/kaho/localmodelregistry.h
 
 )
 
@@ -157,19 +162,27 @@ if (APPLE)
     set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES "${CLEAN_UP_FILES}")
 
     set(OSX_FRAMEWORKS "-framework AppKit -framework Carbon -framework Foundation -framework ApplicationServices -framework Sparkle")
+
     add_custom_target(sparkle_framework ALL
             COMMAND mkdir -p "$<TARGET_FILE_DIR:kaho>/../Frameworks/Sparkle.framework" && cp -a ${KAHO_SB_INSTALL_PREFIX}/sparkle/Sparkle.framework $<TARGET_FILE_DIR:kaho>/../Frameworks
             COMMENT "Copying Sparkle.framework to output directory"
     )
     add_dependencies(sparkle_framework kaho)
 
-    message(STATUS "==> Code signing")
-    add_custom_target(codesign ALL VERBATIM
-            COMMAND codesign --deep --force --verify --verbose --timestamp --options runtime --sign "Developer ID Application: Deepankar Sharma (VTN5FB5JF7)" kaho.app
-            COMMENT "Codesign kaho.app"
+    add_custom_target(copy_server ALL
+            COMMAND cp ${KAHO_SB_INSTALL_PREFIX}/bin/server $<TARGET_FILE_DIR:kaho> && cp ${KAHO_SB_INSTALL_PREFIX}/bin/ggml-metal.metal $<TARGET_FILE_DIR:kaho>
+            COMMENT "Copying server to output directory"
     )
-    add_dependencies(codesign sparkle_framework)
+    add_dependencies(copy_server kaho)
 
+    if (KAHO_MAC_SIGN_APP)
+        message(STATUS "==> Code signing")
+        add_custom_target(codesign ALL VERBATIM
+                COMMAND codesign --deep --force --verify --verbose --timestamp --options runtime --sign "Developer ID Application: Deepankar Sharma (VTN5FB5JF7)" kaho.app
+                COMMENT "Codesign kaho.app"
+        )
+        add_dependencies(codesign sparkle_framework)
+    endif()
 #    if(KAHO_BUILD_DMG)
 #        if(KAHO_DEPLOYMENT_BUILD)
 #            set(NOTARIZE_FLAG "--notarize")

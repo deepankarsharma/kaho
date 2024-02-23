@@ -1,6 +1,8 @@
 #include <kaho/file_utils.h>
+#include <QDir>
+#include <QStandardPaths>
 
-
+namespace kaho {
 //int to_file(const QString& path, const QByteArray& byteArray) {
 
 //    QFile file(path);
@@ -22,36 +24,59 @@
 //}
 
 
-int to_file(const QString& path, const QByteArray& byteArray) {
-    QFile file(path); // Replace with your desired output file path
-    if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        // Handle the error if the file couldn't be opened
-        return 1;
+    int to_file(const QString &path, const QByteArray &byteArray) {
+        QFile file(path); // Replace with your desired output file path
+        if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+            // Handle the error if the file couldn't be opened
+            return 1;
+        }
+
+        // Convert QByteArray to QString
+        QString textContent = QString::fromUtf8(byteArray);
+
+        // Write the QString to the file
+        QTextStream out(&file);
+        out << textContent;
+
+        file.close();
+
+        return 0; // Successful execution
     }
 
-    // Convert QByteArray to QString
-    QString textContent = QString::fromUtf8(byteArray);
+    QString from_file(const QString &path) {
+        // test ...
+        QFile file(path);
+        if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+            // Handle the error if the file couldn't be opened
+            return "<ERROR>";
+        }
 
-    // Write the QString to the file
-    QTextStream out(&file);
-    out << textContent;
+        QTextStream in(&file);
+        QString content = in.readAll();
 
-    file.close();
-
-    return 0; // Successful execution
-}
-
-QString from_file(const QString& path) {
-    // test ...
-    QFile file(path);
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        // Handle the error if the file couldn't be opened
-        return "<ERROR>";
+        file.close();
+        return content;
     }
 
-    QTextStream in(&file);
-    QString content = in.readAll();
+// returns true if the directory was created successfully
+// make sure that mkdir -p semantics is supported
+    ErrorCode ensure_dir(const QString &path) {
+        QDir dir(path);
+        if (!dir.exists()) {
+            if (!dir.mkpath(path)) {
+                qDebug() << "Error creating path: " << path;
+                return ErrorCode::IO_FAILED;
+            }
+        }
+        return ErrorCode::OK;
+    }
 
-    file.close();
-    return content;
-}
+    QString resolve_path(KahoPath path) {
+        switch (path) {
+            case KahoPath::ModelsDir: {
+                return QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + "/models";
+            }
+        }
+        return "";
+    }
+} // namespace kaho
