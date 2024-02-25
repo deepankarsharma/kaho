@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 # Make sure you bump version in bin/base.sh when you change this
 # For more details refer to bumping_versions playbook
-project(kaho VERSION 0.3.3 LANGUAGES CXX)
+project(kaho VERSION 0.8.8 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -37,28 +37,6 @@ qt_standard_project_setup()
 
 set(PROJECT_SOURCES
     src/main.cpp
-    src/aimodel.cpp
-    src/chatview.cpp
-    src/file_utils.cpp
-    src/mainwindow.cpp
-    src/noneditablestringlistmodel.cpp
-    src/promptedit.cpp
-    src/server.cpp
-    src/downloader.cpp
-        src/errors.cpp
-        src/localmodelregistry.cpp
-    include/kaho/aimodel.h
-    include/kaho/chatview.h
-    include/kaho/mainwindow.h
-    include/kaho/promptedit.h
-    include/kaho/base.h
-    include/kaho/file_utils.h
-    include/kaho/noneditablestringlistmodel.h
-    include/kaho/server.h
-    include/kaho/downloader.h
-        include/kaho/errors.h
-        include/kaho/localmodelregistry.h
-
 )
 
 if(APPLE)
@@ -67,12 +45,8 @@ if(APPLE)
     set_source_files_properties(${KAHO_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
 
     list(APPEND PROJECT_SOURCES
-        external/updater/SparkleAutoUpdater.mm
-        external/updater/CocoaInitializer.mm
-        external/updater/AutoUpdater.cpp
-        external/updater/SparkleAutoUpdater.h
-        external/updater/CocoaInitializer.h
-        external/updater/AutoUpdater.h
+            src/sparkle_auto_updater.mm
+            include/kaho/updater.h
             ${KAHO_ICON}
     )
 endif()
@@ -172,31 +146,5 @@ if (APPLE)
         )
         add_dependencies(codesign sparkle_framework)
     endif()
-#    if(KAHO_BUILD_DMG)
-#        if(KAHO_DEPLOYMENT_BUILD)
-#            set(NOTARIZE_FLAG "--notarize")
-#        else()
-#            set(NOTARIZE_FLAG "")
-#        endif()
-#        set(KAHO_INSTALLER_ART_DIR )
-#        message(STATUS "==> Building DMG volicon => ${CMAKE_CURRENT_SOURCE_DIR}/art/mac_installer/logo.icns")
-#
-#        add_custom_target(create_dmg ALL VERBATIM
-#                COMMAND create-dmg --codesign "Apple Distribution: Deepankar Sharma (VTN5FB5JF7)"
-#                    ${NOTARIZE_FLAG}
-#                    --volname "Kaho Installer"
-#                    --volicon ${CMAKE_CURRENT_SOURCE_DIR}/art/mac_installer/logo.icns
-#                    --background ${CMAKE_CURRENT_SOURCE_DIR}/art/mac_installer/background.png
-#                    --window-pos 200 120
-#                    --window-size 800 400
-#                    --icon-size 100
-#                    --icon "kaho.app" 200 190
-#                    --hide-extension "kaho.app"
-#                    --app-drop-link 600 185
-#                    kaho.dmg kaho.app
-#                COMMENT "Create DMG"
-#        )
-#        add_dependencies(create_dmg codesign)
-#    endif()
 set_target_properties(kaho PROPERTIES LINK_FLAGS "-F/Library/Frameworks -Wl -rpath @loader_path/../Frameworks")
 endif ()
