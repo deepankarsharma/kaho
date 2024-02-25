@@ -2,7 +2,7 @@
 
 # Make sure you change Project version in CMakeLists.txt when you bump this
 # For more details refer to bumping_versions playbook
-export KAHO_VERSION="0.3.3"
+export KAHO_VERSION="0.8.8"
 
 CURDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 

@@ -52,6 +52,18 @@
     <key>SUFeedURL</key>
     <string>${MACOSX_SPARKLE_UPDATE_FEED_URL}</string>
 
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+
+	<key>SUScheduledCheckInterval</key>
+	<integer>3600</integer>
+
+	<key>SUAllowsAutomaticUpdates</key>
+	<true/>
+
+	<key>SUAutomaticallyUpdate</key>
+	<true/>
+	
     <key>CSResourcesFileMapped</key>
     <true/>
 </dict>
