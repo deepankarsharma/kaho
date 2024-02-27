@@ -43,6 +43,11 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <qmarkdowntextedit.h>
+#include <QWebEngineView>
+#include <cmark-gfm.h>
+#include <cmark-gfm-extension_api.h>
+#include <cmark-gfm-core-extensions.h>
 
 // ******************** Memory related ***************
 template <typename T>
@@ -223,6 +228,29 @@ QString resolve_path(KahoPath path) {
   return ErrorCode::OK;
 }
 
+// ************** Markdown support *********
+QString markdown_to_html(const QString& markdown) {
+  cmark_gfm_core_extensions_ensure_registered();
+  cmark_parser *parser = cmark_parser_new(CMARK_OPT_DEFAULT);
+
+  const char* extensions[] = {"table", "autolink", "strikethrough"};
+
+  for (const char* extName : extensions) {
+    cmark_syntax_extension *ext = cmark_find_syntax_extension(extName);
+    if (ext) {
+      cmark_parser_attach_syntax_extension(parser, ext);
+    }
+  }
+
+  cmark_parser_feed(parser, markdown.toUtf8().constData(), markdown.length());
+  cmark_node *document = cmark_parser_finish(parser);
+  char *html = cmark_render_html(document, CMARK_OPT_DEFAULT, NULL);
+  QString html_qstring = QString::fromUtf8(html);
+  cmark_parser_free(parser);
+  cmark_node_free(document);
+  free(html);
+  return html_qstring;
+}
 
 // ************** Model classes ************
 class AIModel : public QObject {
@@ -463,7 +491,10 @@ class ChatView : public QWidget {
     auto secondColumnVLayout = new QVBoxLayout();
 
     m_view_current_answer = new QTextEdit();
-    m_view_current_answer->setText("0.8.8");
+//    auto font = m_view_current_answer->font();
+//    font.setPointSize(font.pointSize() * 4);
+    //m_view_current_answer->setFont(font);
+
     secondColumnVLayout->addWidget(m_view_current_answer, 5);
 
     auto prompt = new PromptEdit();
@@ -486,7 +517,10 @@ class ChatView : public QWidget {
             QJsonDocument jsonDoc = QJsonDocument::fromJson(rest.toUtf8());
             auto content = jsonDoc["choices"][0]["delta"]["content"];
             m_answer += content.toString();
-            this->m_view_current_answer->setMarkdown(this->m_answer);
+            // this->m_view_current_answer->setMarkdown(this->m_answer);
+            qDebug() << "markdown ==> " << this->m_answer;
+            qDebug() << "rendered_html ==> " << markdown_to_html(m_answer);
+            //this->m_view_current_answer->setText(this->m_answer);
           }
         });
 
@@ -501,7 +535,7 @@ class ChatView : public QWidget {
  public slots:
   void promptEnteredUpdateUi(const QString& prompt) {
     m_view_prompt->setText("");
-    m_view_current_answer->setText("");
+    //m_view_current_answer->setText("");
     m_answer = "";
     auto m = m_view_questions->model();
     if (m->insertRow(m->rowCount())) {
@@ -515,6 +549,7 @@ class ChatView : public QWidget {
   QProgressBar* m_progress_bar;
   QListView* m_view_questions;
   QTextEdit* m_view_current_answer;
+  QtWebE
   PromptEdit* m_view_prompt;
   QString m_answer;
 };
@@ -606,6 +641,9 @@ ErrorCode initialize() {
 int main(int argc, char* argv[]) {
   QApplication a(argc, argv);
   MainWindow w;
+  QFont defaultFont;
+  defaultFont.setPointSize(16);
+  a.setFont(defaultFont);
   w.setGeometry(QRect(0, 0, 1200, 800));
   if (!is_ok(initialize())) {
     qDebug() << "Error initializing";

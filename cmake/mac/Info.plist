@@ -57,12 +57,6 @@
 
 	<key>SUScheduledCheckInterval</key>
 	<integer>3600</integer>
-
-	<key>SUAllowsAutomaticUpdates</key>
-	<true/>
-
-	<key>SUAutomaticallyUpdate</key>
-	<true/>
 	
     <key>CSResourcesFileMapped</key>
     <true/>

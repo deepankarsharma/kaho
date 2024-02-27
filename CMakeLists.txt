@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.5)
 
 # Make sure you bump version in bin/base.sh when you change this
 # For more details refer to bumping_versions playbook
-project(kaho VERSION 0.8.8 LANGUAGES CXX)
+project(kaho VERSION 8.1.0 LANGUAGES CXX)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -31,12 +31,25 @@ if (APPLE)
     find_package(Sparkle REQUIRED)
 endif()
 
+include(Dependencies)
+
+
 find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network Core Svg Wayland)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 qt_standard_project_setup()
-
+include_directories(external/qmarkdowntextedit)
 set(PROJECT_SOURCES
-    src/main.cpp
+        external/qmarkdowntextedit/markdownhighlighter.h
+        external/qmarkdowntextedit/linenumberarea.h
+        external/qmarkdowntextedit/markdownhighlighter.h
+        external/qmarkdowntextedit/markdownhighlighter.cpp
+        external/qmarkdowntextedit/qmarkdowntextedit.h
+        external/qmarkdowntextedit/qmarkdowntextedit.cpp
+        external/qmarkdowntextedit/qownlanguagedata.h
+        external/qmarkdowntextedit/qownlanguagedata.cpp
+        external/qmarkdowntextedit/qplaintexteditsearchwidget.h
+        external/qmarkdowntextedit/qplaintexteditsearchwidget.cpp
+        src/main.cpp
 )
 
 if(APPLE)
@@ -56,8 +69,8 @@ qt_add_executable(kaho
     ${PROJECT_SOURCES}
 )
 
-set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core)
-set(KAHO_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/external")
+set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core cmark::cmark cmark::cmark_extensions)
+set(KAHO_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/external/cmark-gfm/src")
 
 if (APPLE)
     list(APPEND KAHO_LIBRARIES ${SPARKLE_LIBRARY})
@@ -67,6 +80,7 @@ endif()
 
 target_link_libraries(kaho PRIVATE ${KAHO_LIBRARIES})
 target_include_directories(kaho PUBLIC ${KAHO_INCLUDE_DIRS})
+
 
 string(TIMESTAMP CURRENT_YEAR "%Y")
 
@@ -100,23 +114,29 @@ install(TARGETS kaho
 )
 
 set(resource_files
-    "images/c1.png"
-    "images/c2.png"
-    "images/icons8-search.svg"
-    "images/icons8-home.svg"
-    "images/icons8-server.svg"
-    "images/icons8-settings.svg"
-    "images/icons8-chat.svg"
+        "images/c1.png"
+        "images/c2.png"
+        "images/icons8-search.svg"
+        "images/icons8-home.svg"
+        "images/icons8-server.svg"
+        "images/icons8-settings.svg"
+        "images/icons8-chat.svg"
         "images/icons8-enter.svg"
         "images/icons8-send.svg"
+        "media/edit-find-replace.svg"
+        "media/go-bottom.svg"
+        "media/window-close.svg"
+        "media/format-text-superscript.svg"
+        "media/go-top.svg"
 )
 
 qt_add_resources(kaho "kaho"
-    PREFIX
+        PREFIX
         "/"
-    FILES
+        FILES
         ${resource_files}
 )
+
 qt_finalize_executable(kaho)
 
 

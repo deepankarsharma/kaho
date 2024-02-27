@@ -16,8 +16,9 @@ if(NOT EXISTS "${SB_INSTALL_PREFIX}")
     file(MAKE_DIRECTORY "${SB_INSTALL_PREFIX}")
 endif()
 
-include(external_qt)
 include(external_llama)
+include(external_cmark_gfm)
+include(external_qt)
 
 if (APPLE)
     include(external_sparkle)    
