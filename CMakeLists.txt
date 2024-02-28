@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.20)
 
 # Make sure you bump version in bin/base.sh when you change this
 # For more details refer to bumping_versions playbook
@@ -34,8 +34,8 @@ endif()
 include(Dependencies)
 
 
-find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network Core Svg Wayland)
-find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
+find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network Core Svg WebEngine)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg WebEngine)
 qt_standard_project_setup()
 include_directories(external/qmarkdowntextedit)
 set(PROJECT_SOURCES
@@ -69,7 +69,7 @@ qt_add_executable(kaho
     ${PROJECT_SOURCES}
 )
 
-set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core cmark::cmark cmark::cmark_extensions)
+set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core Qt6::WebEngine cmark::cmark cmark::cmark_extensions)
 set(KAHO_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/external/cmark-gfm/src")
 
 if (APPLE)

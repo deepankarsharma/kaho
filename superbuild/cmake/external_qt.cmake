@@ -10,7 +10,7 @@ ExternalProject_Add(qt
   GIT_SHALLOW    ON
   GIT_SUBMODULES ""
   BUILD_IN_SOURCE ON
-  CONFIGURE_COMMAND perl <SOURCE_DIR>/init-repository -f -module-subset=qtbase,qtsvg,qtimageformats,qtdeclarative,qtwebengine,qtshadertools && <SOURCE_DIR>/configure -prefix ${SB_INSTALL_PREFIX} -cmake-generator Ninja ${BUILD_TYPE} -nomake examples -nomake tests -qt-libpng -qt-zlib -qt-libjpeg -qt-freetype -qt-pcre -qt-harfbuzz -sql-sqlite -qt-sqlite -no-zstd -webengine-proprietary-codecs
+  CONFIGURE_COMMAND perl <SOURCE_DIR>/init-repository -f -module-subset=qtbase,qtsvg,qtimageformats && <SOURCE_DIR>/configure -prefix ${SB_INSTALL_PREFIX} -cmake-generator Ninja ${BUILD_TYPE} -nomake examples -nomake tests -qt-libpng -qt-zlib -qt-libjpeg -qt-freetype -qt-pcre -qt-harfbuzz -sql-sqlite -qt-sqlite -no-zstd
   BUILD_COMMAND cmake --build . --parallel -- -j8
   INSTALL_COMMAND cmake --install .
 )

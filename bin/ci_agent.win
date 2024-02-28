@@ -1,1 +1,1 @@
-choco install ninja cmake git nssm StrawberryPerl python311 -y
+choco install ninja cmake git nssm StrawberryPerl python310 -y
