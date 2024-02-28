@@ -11,16 +11,19 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+
 set(KAHO_SB_INSTALL_PREFIX "/opt/kaho/${CMAKE_BUILD_TYPE}")
-set(KAHO_DEPLOYMENT_BUILD OFF)
 
 option(KAHO_MAC_SIGN_APP "Option for signing the Mac app" OFF)
+
 if (APPLE)
     set(QT_DEFAULT_DIR "$ENV{HOME}/Qt/6.6.1/macos")
-elseif()
+elseif(LINUX)
     set(QT_DEFAULT_DIR "$ENV{HOME}/Qt/6.6.1")
-else()
+elseif(WIN32)
     set(QT_DEFAULT_DIR "c:/Qt")
+else()
+    MESSAGE(ERROR "Unknown platform")
 endif()
 
 set(KAHO_MAC_BUILD_DMG OFF)
@@ -44,8 +47,15 @@ if (APPLE)
 endif()
 
 include(Dependencies)
+
+message(STATUS "Looking for cmark")
 include(FindCmark)
-include(FindSparkle)
+
+
+if (APPLE)
+    message(STATUS "Looking for sparkle")
+    include(FindSparkle)
+endif()
 
 find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
@@ -65,6 +75,13 @@ set(PROJECT_SOURCES
         external/qmarkdowntextedit/qplaintexteditsearchwidget.cpp
         src/main.cpp
 )
+
+if(WIN32)
+    list(APPEND PROJECT_SOURCES
+            src/winsparkle_auto_updater.cpp
+            include/kaho/updater.h
+    )
+endif()
 
 if(APPLE)
     set(MACOSX_BUNDLE_ICON_FILE logo.icns)

@@ -1,8 +1,6 @@
 
 #include <QtGlobal>  // Needs to happen before Q_OS_MAC
-#ifdef Q_OS_MAC
 #include <kaho/updater.h>
-#endif
 #include <QApplication>
 #include <QCoreApplication>
 #include <QDebug>
@@ -623,7 +621,7 @@ class MainWindow : public QMainWindow {
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_toolbar->addWidget(spacer);
     add_button("button_4", 3, ":/images/icons8-settings.svg");
-    m_updater.reset(new SparkleAutoUpdater());
+    m_updater.reset(new Updater());
     connect(m_updater.get(), &AutoUpdater::canCheckForUpdatesChanged, this, [this](bool canCheck) {
       qDebug() << "canCheck is " << canCheck;
       m_can_check_updates = canCheck;
