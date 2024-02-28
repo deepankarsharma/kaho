@@ -1,7 +1,11 @@
 
-cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.20)
 
 project(kaho-superbuild)
+
+#if (WIN32)
+#    set(CMAKE_GENERATOR_PLATFORM x64)
+#endif()
 
 set(CMAKE_MODULE_PATH
     ${CMAKE_SOURCE_DIR}/cmake

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.20)
 
 # Make sure you bump version in bin/base.sh when you change this
 # For more details refer to bumping_versions playbook
@@ -47,7 +47,7 @@ include(Dependencies)
 include(FindCmark)
 include(FindSparkle)
 
-find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network Core Svg Wayland)
+find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 qt_standard_project_setup()
 
