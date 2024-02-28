@@ -170,6 +170,18 @@ qt_add_resources(kaho "kaho"
 
 qt_finalize_executable(kaho)
 
+if (WIN32)
+    set(SERVER_EXE "server.exe")
+else()
+    set(SERVER_EXE "server")
+endif()
+
+add_custom_target(copy_server ALL
+        COMMAND cmake -E copy ${KAHO_SB_INSTALL_PREFIX}/bin/${SERVER_EXE} $<TARGET_FILE_DIR:kaho>
+        COMMAND cmake -E copy ${KAHO_SB_INSTALL_PREFIX}/bin/ggml-metal.metal $<TARGET_FILE_DIR:kaho>
+        COMMENT "Copying server to output directory"
+)
+add_dependencies(copy_server kaho)
 
 if (APPLE)
     set(CLEAN_UP_FILES "kaho.app")
@@ -181,20 +193,14 @@ if (APPLE)
             COMMAND mkdir -p "$<TARGET_FILE_DIR:kaho>/../Frameworks/Sparkle.framework" && cp -a ${KAHO_SB_INSTALL_PREFIX}/sparkle/Sparkle.framework $<TARGET_FILE_DIR:kaho>/../Frameworks
             COMMENT "Copying Sparkle.framework to output directory"
     )
-    add_dependencies(sparkle_framework kaho)
+    add_dependencies(sparkle_framework copy_server)
 
-
-#    add_custom_target(copy_server ALL
-#            COMMAND cp ${KAHO_SB_INSTALL_PREFIX}/bin/server $<TARGET_FILE_DIR:kaho> && cp ${KAHO_SB_INSTALL_PREFIX}/bin/ggml-metal.metal $<TARGET_FILE_DIR:kaho>
-#            COMMENT "Copying server to output directory"
-#    )
-#    add_dependencies(copy_server sparkle_framework)
 
 #    add_custom_target(macdeployqt ALL
 #            COMMAND "${QT_DEFAULT_DIR}/bin/macdeployqt" kaho.app
 #            COMMENT "Running macdeployqt"
 #    )
-#    add_dependencies(macdeployqt copy_server)
+#    add_dependencies(macdeployqt sparkle_framework)
 
 #    if (KAHO_MAC_SIGN_APP)
 #        message(STATUS "==> Code signing")

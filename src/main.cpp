@@ -46,6 +46,15 @@
 #include <cmark-gfm-extension_api.h>
 #include <cmark-gfm-core-extensions.h>
 
+#include <qplaintextedit.h>
+#include <qmetaobject.h>
+#include <qthread.h>
+#include <qboxlayout.h>
+#include <qdatetime.h>
+#include <qdebug.h>
+#include <cstdio>
+#include <cassert>
+
 // ******************** Memory related ***************
 template <typename T>
 using unique_qobject_ptr = QScopedPointer<T, QScopedPointerDeleteLater>;
@@ -225,6 +234,60 @@ QString resolve_path(KahoPath path) {
   return ErrorCode::OK;
 }
 
+// ************** Debug utilities **********
+
+
+
+QWidget         *DEBUG_MESSAGE_DISPLAY_WIDGET   = NULL;
+QPlainTextEdit  *DEBUG_MESSAGE_DISPLAY_TEXTEDIT = NULL;
+
+
+
+void debugMessageDisplayFunc(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+{
+  QByteArray localMsg = msg.toLocal8Bit();
+  const char *file = context.file ? context.file : "";
+  const char *function = context.function ? context.function : "";
+  switch (type) {
+    case QtDebugMsg:
+      fprintf(stderr, "Debug: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
+      break;
+    case QtInfoMsg:
+      fprintf(stderr, "Info: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
+      break;
+    case QtWarningMsg:
+      fprintf(stderr, "Warning: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
+      break;
+    case QtCriticalMsg:
+      fprintf(stderr, "Critical: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
+      break;
+    case QtFatalMsg:
+      fprintf(stderr, "Fatal: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
+      break;
+  }
+}
+
+void setupDebugDisplay()
+{
+  auto widget = new QWidget();
+  widget->setWindowTitle( "Debug Log" );
+  widget->setAttribute( Qt::WA_QuitOnClose, false ); //quit only when mainwindow is closed
+  QBoxLayout* layout = new QVBoxLayout();
+  widget->setLayout( layout );
+  auto textEdit = new QPlainTextEdit( widget );
+  QFont font = QFont( "Monospace" );
+  font.setStyleHint(QFont::TypeWriter);
+  textEdit->setFont( font );
+  textEdit->setReadOnly(true);
+  layout->addWidget( textEdit );
+  widget->show();
+  DEBUG_MESSAGE_DISPLAY_WIDGET   = widget;
+  DEBUG_MESSAGE_DISPLAY_TEXTEDIT = textEdit;
+  qInstallMessageHandler(debugMessageDisplayFunc);
+}
+
+
+
 // ************** Markdown support *********
 QString markdown_to_html(const QString& markdown) {
   cmark_gfm_core_extensions_ensure_registered();
@@ -259,7 +322,7 @@ class AIModel : public QObject {
 
  private:
   void make_request(const QString& prompt) {
-    QNetworkRequest request(QUrl("http://localhost:8080/v1/chat/completions"));
+    QNetworkRequest request(QUrl("http://127.0.0.1:8080/v1/chat/completions"));
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setRawHeader("Authorization", "Bearer no-key");
 
@@ -376,6 +439,7 @@ class Server : public QObject {
   }
 
   void start(const QString& url) {
+    qDebug() << "Server::start";
     m_process = new QProcess(this);
     m_process->setProcessChannelMode(QProcess::SeparateChannels);
 
@@ -401,6 +465,7 @@ class Server : public QObject {
     arguments << "-m" << model_file_path << "--port" << QString::number(port);
     auto program =
         QCoreApplication::applicationDirPath() + "/" + QString("server");
+    qDebug() << "Starting " << program << " " << arguments;
     m_process->start(program, arguments);
     connect(m_process, &QProcess::started, this, &Server::processStarted);
     connect(m_process, &QProcess::errorOccurred, this, &Server::processError);
@@ -652,11 +717,16 @@ ErrorCode initialize() {
 }
 
 int main(int argc, char* argv[]) {
+  qDebug() << "Main";
   QApplication a(argc, argv);
   MainWindow w;
   QFont defaultFont;
   defaultFont.setPointSize(16);
-  a.setFont(defaultFont);
+  QApplication::setFont(defaultFont);
+  QApplication::setQuitOnLastWindowClosed( true );
+
+  setupDebugDisplay();
+
   w.setGeometry(QRect(0, 0, 1200, 800));
   if (!is_ok(initialize())) {
     qDebug() << "Error initializing";
@@ -664,10 +734,9 @@ int main(int argc, char* argv[]) {
   }
   w.show();
 
-#ifdef Q_OS_MAC
-
-#endif
-  return QApplication::exec();
+  int ret = QApplication::exec();
+  delete DEBUG_MESSAGE_DISPLAY_WIDGET;
+  return ret;
 }
 
 #include "main.moc"
