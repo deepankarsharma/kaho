@@ -13,7 +13,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
 set(KAHO_SB_INSTALL_PREFIX "/opt/kaho/${CMAKE_BUILD_TYPE}")
 set(KAHO_DEPLOYMENT_BUILD OFF)
+
 option(KAHO_MAC_SIGN_APP "Option for signing the Mac app" OFF)
+if (APPLE)
+    set(QT_DEFAULT_DIR "$ENV{HOME}/Qt/6.6.1/macos")
+elseif()
+    set(QT_DEFAULT_DIR "$ENV{HOME}/Qt/6.6.1")
+else()
+    set(QT_DEFAULT_DIR "c:/Qt")
+endif()
+
 set(KAHO_MAC_BUILD_DMG OFF)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -26,17 +35,22 @@ endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
+list(APPEND CMAKE_PREFIX_PATH ${QT_DEFAULT_DIR})
+list(APPEND CMAKE_PREFIX_PATH ${KAHO_SB_INSTALL_PREFIX})
+
 if (APPLE)
     list(APPEND CMAKE_PREFIX_PATH "${KAHO_SB_INSTALL_PREFIX}")
     find_package(Sparkle REQUIRED)
 endif()
 
 include(Dependencies)
-
+include(FindCmark)
+include(FindSparkle)
 
 find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network Core Svg Wayland)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 qt_standard_project_setup()
+
 include_directories(external/qmarkdowntextedit)
 set(PROJECT_SOURCES
         external/qmarkdowntextedit/markdownhighlighter.h
@@ -69,7 +83,7 @@ qt_add_executable(kaho
     ${PROJECT_SOURCES}
 )
 
-set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core cmark::cmark cmark::cmark_extensions)
+set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core cmark::cmark cmark::extensions)
 set(KAHO_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/external/cmark-gfm/src")
 
 if (APPLE)
@@ -152,19 +166,26 @@ if (APPLE)
     )
     add_dependencies(sparkle_framework kaho)
 
-    add_custom_target(copy_server ALL
-            COMMAND cp ${KAHO_SB_INSTALL_PREFIX}/bin/server $<TARGET_FILE_DIR:kaho> && cp ${KAHO_SB_INSTALL_PREFIX}/bin/ggml-metal.metal $<TARGET_FILE_DIR:kaho>
-            COMMENT "Copying server to output directory"
-    )
-    add_dependencies(copy_server kaho)
 
-    if (KAHO_MAC_SIGN_APP)
-        message(STATUS "==> Code signing")
-        add_custom_target(codesign ALL VERBATIM
-                COMMAND codesign --deep --force --verify --verbose --timestamp --options runtime --sign "Developer ID Application: Deepankar Sharma (VTN5FB5JF7)" kaho.app
-                COMMENT "Codesign kaho.app"
-        )
-        add_dependencies(codesign sparkle_framework)
-    endif()
+#    add_custom_target(copy_server ALL
+#            COMMAND cp ${KAHO_SB_INSTALL_PREFIX}/bin/server $<TARGET_FILE_DIR:kaho> && cp ${KAHO_SB_INSTALL_PREFIX}/bin/ggml-metal.metal $<TARGET_FILE_DIR:kaho>
+#            COMMENT "Copying server to output directory"
+#    )
+#    add_dependencies(copy_server sparkle_framework)
+
+#    add_custom_target(macdeployqt ALL
+#            COMMAND "${QT_DEFAULT_DIR}/bin/macdeployqt" kaho.app
+#            COMMENT "Running macdeployqt"
+#    )
+#    add_dependencies(macdeployqt copy_server)
+
+#    if (KAHO_MAC_SIGN_APP)
+#        message(STATUS "==> Code signing")
+#        add_custom_target(codesign ALL VERBATIM
+#                COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/bin/mac_codesign.sh
+#                COMMENT "Codesign kaho.app"
+#        )
+#        add_dependencies(codesign macdeployqt)
+#    endif()
 set_target_properties(kaho PROPERTIES LINK_FLAGS "-F/Library/Frameworks -Wl -rpath @loader_path/../Frameworks")
 endif ()

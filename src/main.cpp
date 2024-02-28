@@ -44,7 +44,6 @@
 #include <QVBoxLayout>
 #include <QWidget>
 #include <qmarkdowntextedit.h>
-#include <QWebEngineView>
 #include <cmark-gfm.h>
 #include <cmark-gfm-extension_api.h>
 #include <cmark-gfm-core-extensions.h>
@@ -374,10 +373,25 @@ class Server : public QObject {
   Q_OBJECT
  public:
   Server() : m_process(nullptr) {};
+  ~Server() override {
+      m_process->deleteLater();
+  }
+
   void start(const QString& url) {
     m_process = new QProcess(this);
-    m_process->setReadChannel(QProcess::StandardOutput);
-    m_process->setProcessChannelMode(QProcess::MergedChannels);
+    m_process->setProcessChannelMode(QProcess::SeparateChannels);
+
+    // Connect signals to slots (functions)
+    connect(m_process, &QProcess::readyReadStandardOutput, [this]() {
+      QString output = m_process->readAllStandardOutput();
+      qDebug() << "SERVER_STDOUT: " << output;
+    });
+
+    connect(m_process, &QProcess::readyReadStandardError, [this]() {
+      QString errorOutput = m_process->readAllStandardError();
+      qDebug() << "SERVER_STDERR: " << errorOutput;
+    });
+
     m_process->setWorkingDirectory(QCoreApplication::applicationDirPath());
     QStringList arguments;
     auto model_file_path = LocalModelRegistry::resolve_filename(url);
@@ -401,6 +415,8 @@ class Server : public QObject {
   void processStarted() { qDebug() << "Process started successfully"; }
   void processError(QProcess::ProcessError error) {
     qDebug() << "Process had an error: " << error;
+    qDebug() << "Captured stdout:" << m_process->readAllStandardOutput();
+    qDebug() << "Captured stderr:" << m_process->readAllStandardError();
   }
 
  private:
@@ -549,7 +565,6 @@ class ChatView : public QWidget {
   QProgressBar* m_progress_bar;
   QListView* m_view_questions;
   QTextEdit* m_view_current_answer;
-  QtWebE
   PromptEdit* m_view_prompt;
   QString m_answer;
 };
