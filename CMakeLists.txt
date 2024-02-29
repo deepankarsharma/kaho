@@ -4,15 +4,29 @@ cmake_minimum_required(VERSION 3.20)
 # For more details refer to bumping_versions playbook
 project(kaho VERSION 8.1.0 LANGUAGES CXX)
 
+message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE} CMAKE_C_COMPILER: ${CMAKE_C_COMPILER} CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
+
+
+############## Configure cmake ######################
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE}")
+
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+        message(STATUS "Enabling sanitizers for debug build...")
+        add_compile_options($<$<CONFIG:Debug>:-fsanitize=address,undefined>)
+        add_link_options($<$<CONFIG:Debug>:-fsanitize=address,undefined>)
+    endif()
+endif()
+
+
+
+
+############## Kaho specific configuration ##########
 set(KAHO_SB_INSTALL_PREFIX "/opt/kaho/${CMAKE_BUILD_TYPE}")
-set(KAHO_DEPLOYMENT_BUILD OFF)
 
 option(KAHO_MAC_SIGN_APP "Option for signing the Mac app" OFF)
 if (APPLE)
@@ -23,21 +37,13 @@ else()
     set(QT_DEFAULT_DIR "c:/Qt")
 endif()
 
-set(KAHO_MAC_BUILD_DMG OFF)
-
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-        message(STATUS "Enabling sanitizers for debug build...")
-        add_compile_options($<$<CONFIG:Debug>:-fsanitize=address,undefined>)
-        add_link_options($<$<CONFIG:Debug>:-fsanitize=address,undefined>)
-    endif()
-endif()
-
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-
 list(APPEND CMAKE_PREFIX_PATH ${QT_DEFAULT_DIR})
 list(APPEND CMAKE_PREFIX_PATH ${KAHO_SB_INSTALL_PREFIX})
 
+
+
+############# Dependencies ############################
 if (APPLE)
     list(APPEND CMAKE_PREFIX_PATH "${KAHO_SB_INSTALL_PREFIX}")
     find_package(Sparkle REQUIRED)
@@ -49,28 +55,19 @@ include(FindSparkle)
 
 find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
+
+
+
+
+############ Kaho static library ######################
 qt_standard_project_setup()
 
-include_directories(external/qmarkdowntextedit)
 set(PROJECT_SOURCES
-        external/qmarkdowntextedit/markdownhighlighter.h
-        external/qmarkdowntextedit/linenumberarea.h
-        external/qmarkdowntextedit/markdownhighlighter.h
-        external/qmarkdowntextedit/markdownhighlighter.cpp
-        external/qmarkdowntextedit/qmarkdowntextedit.h
-        external/qmarkdowntextedit/qmarkdowntextedit.cpp
-        external/qmarkdowntextedit/qownlanguagedata.h
-        external/qmarkdowntextedit/qownlanguagedata.cpp
-        external/qmarkdowntextedit/qplaintexteditsearchwidget.h
-        external/qmarkdowntextedit/qplaintexteditsearchwidget.cpp
+        include/kaho/main.h
         src/main.cpp
 )
 
 if(APPLE)
-    set(MACOSX_BUNDLE_ICON_FILE logo.icns)
-    set(KAHO_ICON ${CMAKE_CURRENT_SOURCE_DIR}/art/mac_installer/logo.icns)
-    set_source_files_properties(${KAHO_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-
     list(APPEND PROJECT_SOURCES
             src/sparkle_auto_updater.mm
             include/kaho/updater.h
@@ -78,23 +75,60 @@ if(APPLE)
     )
 endif()
 
-qt_add_executable(kaho
-    MANUAL_FINALIZATION
-    ${PROJECT_SOURCES}
-)
 
 set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core cmark::cmark cmark::extensions)
 set(KAHO_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/external/cmark-gfm/src")
-
 if (APPLE)
     list(APPEND KAHO_LIBRARIES ${SPARKLE_LIBRARY})
     list(APPEND KAHO_INCLUDE_DIRS ${SPARKLE_INCLUDE_DIR})
 endif()
 
+add_library(kaho_static STATIC ${PROJECT_SOURCES})
+target_link_libraries(kaho_static PRIVATE ${KAHO_LIBRARIES})
+target_include_directories(kaho_static PUBLIC ${KAHO_INCLUDE_DIRS})
 
-target_link_libraries(kaho PRIVATE ${KAHO_LIBRARIES})
-target_include_directories(kaho PUBLIC ${KAHO_INCLUDE_DIRS})
 
+set(resource_files
+        "images/c1.png"
+        "images/c2.png"
+        "images/icons8-search.svg"
+        "images/icons8-home.svg"
+        "images/icons8-server.svg"
+        "images/icons8-settings.svg"
+        "images/icons8-chat.svg"
+        "images/icons8-enter.svg"
+        "images/icons8-send.svg"
+        "media/edit-find-replace.svg"
+        "media/go-bottom.svg"
+        "media/window-close.svg"
+        "media/format-text-superscript.svg"
+        "media/go-top.svg"
+)
+
+qt_add_resources(kaho_static "kaho_static"
+        PREFIX
+        "/"
+        FILES
+        ${resource_files}
+)
+
+##################### Kaho private exe ######################
+
+if(APPLE)
+    set(MACOSX_BUNDLE_ICON_FILE logo.icns)
+    set(KAHO_ICON ${CMAKE_CURRENT_SOURCE_DIR}/art/mac_installer/logo.icns)
+    set_source_files_properties(${KAHO_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+
+endif()
+
+
+qt_add_executable(kaho
+        MANUAL_FINALIZATION
+        src/public_main.cpp
+        include/kaho/main.h
+)
+target_include_directories(kaho PUBLIC "${PROJECT_SOURCE_DIR}/include")
+target_link_libraries(kaho PRIVATE kaho_static)
 
 string(TIMESTAMP CURRENT_YEAR "%Y")
 
@@ -116,9 +150,9 @@ set_target_properties(kaho PROPERTIES
     WIN32_EXECUTABLE TRUE
 )
 
-if (LINUX)
-    qt_import_plugins(kaho INCLUDE Qt::QWaylandIntegrationPlugin)
-endif()
+# if (LINUX)
+#     qt_import_plugins(kaho INCLUDE Qt::QWaylandIntegrationPlugin)
+# endif()
 
 include(GNUInstallDirs)
 install(TARGETS kaho
@@ -127,32 +161,7 @@ install(TARGETS kaho
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-set(resource_files
-        "images/c1.png"
-        "images/c2.png"
-        "images/icons8-search.svg"
-        "images/icons8-home.svg"
-        "images/icons8-server.svg"
-        "images/icons8-settings.svg"
-        "images/icons8-chat.svg"
-        "images/icons8-enter.svg"
-        "images/icons8-send.svg"
-        "media/edit-find-replace.svg"
-        "media/go-bottom.svg"
-        "media/window-close.svg"
-        "media/format-text-superscript.svg"
-        "media/go-top.svg"
-)
-
-qt_add_resources(kaho "kaho"
-        PREFIX
-        "/"
-        FILES
-        ${resource_files}
-)
-
 qt_finalize_executable(kaho)
-
 
 if (APPLE)
     set(CLEAN_UP_FILES "kaho.app")
@@ -187,5 +196,5 @@ if (APPLE)
 #        )
 #        add_dependencies(codesign macdeployqt)
 #    endif()
-set_target_properties(kaho PROPERTIES LINK_FLAGS "-F/Library/Frameworks -Wl -rpath @loader_path/../Frameworks")
+    set_target_properties(kaho PROPERTIES LINK_FLAGS "-F/Library/Frameworks -Wl -rpath @loader_path/../Frameworks")
 endif ()

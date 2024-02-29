@@ -43,7 +43,6 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QWidget>
-#include <qmarkdowntextedit.h>
 #include <cmark-gfm.h>
 #include <cmark-gfm-extension_api.h>
 #include <cmark-gfm-core-extensions.h>
@@ -653,7 +652,7 @@ ErrorCode initialize() {
   return ErrorCode::OK;
 }
 
-int main(int argc, char* argv[]) {
+int _main(int argc, char* argv[]) {
   QApplication a(argc, argv);
   MainWindow w;
   QFont defaultFont;
