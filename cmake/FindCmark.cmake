@@ -5,12 +5,12 @@ find_path(CMARK_INCLUDE_DIR cmark-gfm.h
 )
 
 find_library(CMARK_LIBRARY
-        NAMES cmark-gfm
+        NAMES cmark-gfm cmark-gfm_static
         PATHS ${KAHO_SB_INSTALL_PREFIX}/
 )
 
 find_library(CMARK_EXTENSIONS_LIBRARY
-        NAMES cmark-gfm-extensions
+        NAMES cmark-gfm-extensions cmark-gfm-extensions_static
         PATHS ${KAHO_SB_INSTALL_PREFIX}/
 )
 

@@ -56,7 +56,7 @@
 @end
 
 
-class kaho::SparkleAutoUpdater::Private
+class kaho::Updater::Private
 {
 public:
     SPUStandardUpdaterController *updaterController;
@@ -65,9 +65,9 @@ public:
     NSAutoreleasePool *autoReleasePool;
 };
 
-kaho::SparkleAutoUpdater::SparkleAutoUpdater()
+kaho::Updater::Updater()
 {
-    d = new SparkleAutoUpdater::Private();
+    d = new Updater::Private();
 
     // Enable Cocoa's memory management.
     NSApplicationLoad();
@@ -82,7 +82,7 @@ kaho::SparkleAutoUpdater::SparkleAutoUpdater()
     };
 }
 
-kaho::SparkleAutoUpdater::~SparkleAutoUpdater()
+kaho::Updater::~Updater()
 {
     [d->updaterObserver removeObserver:d->updaterObserver forKeyPath:@"updater.canCheckForUpdates"];
 
@@ -93,7 +93,7 @@ kaho::SparkleAutoUpdater::~SparkleAutoUpdater()
     delete d;
 }
 
-void kaho::SparkleAutoUpdater::checkForUpdates()
+void kaho::Updater::checkForUpdates()
 {
     [d->updaterController checkForUpdates:nil];
 }

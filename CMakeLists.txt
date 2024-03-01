@@ -14,6 +14,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
         message(STATUS "Enabling sanitizers for debug build...")
@@ -29,12 +30,15 @@ endif()
 set(KAHO_SB_INSTALL_PREFIX "/opt/kaho/${CMAKE_BUILD_TYPE}")
 
 option(KAHO_MAC_SIGN_APP "Option for signing the Mac app" OFF)
+
 if (APPLE)
     set(QT_DEFAULT_DIR "$ENV{HOME}/Qt/6.6.1/macos")
-elseif()
+elseif(LINUX)
     set(QT_DEFAULT_DIR "$ENV{HOME}/Qt/6.6.1")
-else()
+elseif(WIN32)
     set(QT_DEFAULT_DIR "c:/Qt")
+else()
+    MESSAGE(ERROR "Unknown platform")
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -50,8 +54,18 @@ if (APPLE)
 endif()
 
 include(Dependencies)
+
+message(STATUS "Looking for cmark")
 include(FindCmark)
-include(FindSparkle)
+
+
+if (APPLE)
+    message(STATUS "Looking for sparkle")
+    include(FindSparkle)
+endif()
+
+include(FindQLiteHtml)
+find_package(qlitehtml REQUIRED)
 
 find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
@@ -62,10 +76,20 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 ############ Kaho static library ######################
 qt_standard_project_setup()
 
+set(LITEHTML_BUILD_TESTING OFF)
+add_subdirectory(external/litehtml)
+
 set(PROJECT_SOURCES
         include/kaho/main.h
         src/main.cpp
 )
+
+if(WIN32)
+    list(APPEND PROJECT_SOURCES
+            src/winsparkle_auto_updater.cpp
+            include/kaho/updater.h
+    )
+endif()
 
 if(APPLE)
     list(APPEND PROJECT_SOURCES
@@ -76,12 +100,15 @@ if(APPLE)
 endif()
 
 
-set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core cmark::cmark cmark::extensions)
+set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core cmark::cmark cmark::extensions ${QLITEHTML_LIBRARY} litehtml gumbo)
 set(KAHO_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/external/cmark-gfm/src")
+
 if (APPLE)
     list(APPEND KAHO_LIBRARIES ${SPARKLE_LIBRARY})
     list(APPEND KAHO_INCLUDE_DIRS ${SPARKLE_INCLUDE_DIR})
 endif()
+
+set(OSX_FRAMEWORKS "-framework AppKit -framework Carbon -framework Foundation -framework ApplicationServices -framework Sparkle")
 
 add_library(kaho_static STATIC ${PROJECT_SOURCES})
 target_link_libraries(kaho_static PRIVATE ${KAHO_LIBRARIES})
@@ -163,30 +190,37 @@ install(TARGETS kaho
 
 qt_finalize_executable(kaho)
 
+
+if (WIN32)
+    set(SERVER_EXE "server.exe")
+else()
+    set(SERVER_EXE "server")
+endif()
+
+add_custom_target(copy_server ALL
+        COMMAND cmake -E copy ${KAHO_SB_INSTALL_PREFIX}/bin/${SERVER_EXE} $<TARGET_FILE_DIR:kaho>
+        COMMAND cmake -E copy ${KAHO_SB_INSTALL_PREFIX}/bin/ggml-metal.metal $<TARGET_FILE_DIR:kaho>
+        COMMENT "Copying server to output directory"
+)
+add_dependencies(copy_server kaho)
+
+
 if (APPLE)
     set(CLEAN_UP_FILES "kaho.app")
     set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES "${CLEAN_UP_FILES}")
-
-    set(OSX_FRAMEWORKS "-framework AppKit -framework Carbon -framework Foundation -framework ApplicationServices -framework Sparkle")
 
     add_custom_target(sparkle_framework ALL
             COMMAND mkdir -p "$<TARGET_FILE_DIR:kaho>/../Frameworks/Sparkle.framework" && cp -a ${KAHO_SB_INSTALL_PREFIX}/sparkle/Sparkle.framework $<TARGET_FILE_DIR:kaho>/../Frameworks
             COMMENT "Copying Sparkle.framework to output directory"
     )
-    add_dependencies(sparkle_framework kaho)
+    add_dependencies(sparkle_framework copy_server)
 
-
-#    add_custom_target(copy_server ALL
-#            COMMAND cp ${KAHO_SB_INSTALL_PREFIX}/bin/server $<TARGET_FILE_DIR:kaho> && cp ${KAHO_SB_INSTALL_PREFIX}/bin/ggml-metal.metal $<TARGET_FILE_DIR:kaho>
-#            COMMENT "Copying server to output directory"
-#    )
-#    add_dependencies(copy_server sparkle_framework)
 
 #    add_custom_target(macdeployqt ALL
 #            COMMAND "${QT_DEFAULT_DIR}/bin/macdeployqt" kaho.app
 #            COMMENT "Running macdeployqt"
 #    )
-#    add_dependencies(macdeployqt copy_server)
+#    add_dependencies(macdeployqt sparkle_framework)
 
 #    if (KAHO_MAC_SIGN_APP)
 #        message(STATUS "==> Code signing")

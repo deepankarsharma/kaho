@@ -1,4 +1,5 @@
 #pragma once
+#include <QtGlobal>
 #include <QString>
 #include <QObject>
 
@@ -6,7 +7,7 @@ namespace kaho {
 class AutoUpdater : public QObject{
   Q_OBJECT
  public:
-  virtual ~AutoUpdater(){};
+  ~AutoUpdater() override = default;
   virtual void checkForUpdates() = 0;
  signals:
   // Emitted by sparkle when the state of canCheckForUpdates changes
@@ -14,10 +15,11 @@ class AutoUpdater : public QObject{
   void canCheckForUpdatesChanged(bool canCheck);
 };
 
-class SparkleAutoUpdater : public AutoUpdater {
+
+class Updater : public AutoUpdater {
  public:
-  SparkleAutoUpdater();
-  ~SparkleAutoUpdater() override;
+  Updater();
+  ~Updater() override;
   void checkForUpdates() override;
 
  private:
@@ -25,5 +27,7 @@ class SparkleAutoUpdater : public AutoUpdater {
   Private* d;
   bool relaunchedFromUpdate;
 };
+
+
 
 }  // namespace kaho

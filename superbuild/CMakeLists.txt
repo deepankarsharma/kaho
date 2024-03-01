@@ -22,7 +22,9 @@ endif()
 
 include(external_llama)
 include(external_cmark_gfm)
-#include(external_qt)
+include(external_qt)
+include(external_litehtml)
+include(external_qlitehtml)
 
 if (APPLE)
     include(external_sparkle)    
