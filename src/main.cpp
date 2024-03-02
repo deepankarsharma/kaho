@@ -60,7 +60,7 @@
   Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
   Q_IMPORT_PLUGIN(QWindowsVistaStylePlugin);
 #elif defined(Q_OS_MAC)
-  Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
+  //Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
 #elif defined(Q_OS_UNIX)
   //Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
   Q_IMPORT_PLUGIN(QWaylandIntegrationPlugin);
@@ -698,6 +698,22 @@ class MainWindow : public QMainWindow {
     auto spacer = new QWidget();
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_toolbar->addWidget(spacer);
+
+    // Add update button
+    {
+      auto toolButton = new QToolButton();
+      toolButton->setText("Update");
+
+      QIcon icon(":/images/icons8-upgrade.svg");
+      toolButton->setIcon(icon);
+
+      connect(toolButton, &QToolButton::clicked, [this] {
+        m_updater->checkForUpdates();
+      });
+
+      this->m_toolbar->addWidget(toolButton);
+    }
+
     add_button("button_4", 3, ":/images/icons8-settings.svg");
     m_updater.reset(new Updater());
     connect(m_updater.get(), &AutoUpdater::canCheckForUpdatesChanged, this, [this](bool canCheck) {

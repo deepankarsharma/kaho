@@ -134,6 +134,8 @@ set(resource_files
         "images/icons8-chat.svg"
         "images/icons8-enter.svg"
         "images/icons8-send.svg"
+        "images/icons8-upgrade.svg"
+        "images/icons8-console.svg"
         "media/edit-find-replace.svg"
         "media/go-bottom.svg"
         "media/window-close.svg"
