@@ -1,8 +1,6 @@
 
 #include <QtGlobal>  // Needs to happen before Q_OS_MAC
-#ifdef Q_OS_MAC
 #include <kaho/updater.h>
-#endif
 #include <QApplication>
 #include <QCoreApplication>
 #include <QDebug>
@@ -38,11 +36,23 @@
 #include <QTextEdit>
 #include <QThread>
 #include <QToolButton>
-#include <QToolbar>
+#include <QToolBar>
 #include <QTranslator>
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <cmark-gfm.h>
+#include <cmark-gfm-extension_api.h>
+#include <cmark-gfm-core-extensions.h>
+#include <qplaintextedit.h>
+#include <qmetaobject.h>
+#include <qthread.h>
+#include <qboxlayout.h>
+#include <qdatetime.h>
+#include <qdebug.h>
+#include <cstdio>
+#include <cassert>
+#include <qmarkdowntextedit.h>
 
 // ******************** Memory related ***************
 template <typename T>
@@ -223,6 +233,83 @@ QString resolve_path(KahoPath path) {
   return ErrorCode::OK;
 }
 
+// ************** Debug utilities **********
+
+
+
+QWidget         *DEBUG_MESSAGE_DISPLAY_WIDGET   = NULL;
+QPlainTextEdit  *DEBUG_MESSAGE_DISPLAY_TEXTEDIT = NULL;
+
+
+
+void debugMessageDisplayFunc(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+{
+  QByteArray localMsg = msg.toLocal8Bit();
+  const char *file = context.file ? context.file : "";
+  const char *function = context.function ? context.function : "";
+  switch (type) {
+    case QtDebugMsg:
+      fprintf(stderr, "Debug: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
+      break;
+    case QtInfoMsg:
+      fprintf(stderr, "Info: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
+      break;
+    case QtWarningMsg:
+      fprintf(stderr, "Warning: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
+      break;
+    case QtCriticalMsg:
+      fprintf(stderr, "Critical: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
+      break;
+    case QtFatalMsg:
+      fprintf(stderr, "Fatal: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
+      break;
+  }
+}
+
+void setupDebugDisplay()
+{
+  auto widget = new QWidget();
+  widget->setWindowTitle( "Debug Log" );
+  widget->setAttribute( Qt::WA_QuitOnClose, false ); //quit only when mainwindow is closed
+  QBoxLayout* layout = new QVBoxLayout();
+  widget->setLayout( layout );
+  auto textEdit = new QPlainTextEdit( widget );
+  QFont font = QFont( "Monospace" );
+  font.setStyleHint(QFont::TypeWriter);
+  textEdit->setFont( font );
+  textEdit->setReadOnly(true);
+  layout->addWidget( textEdit );
+  widget->show();
+  DEBUG_MESSAGE_DISPLAY_WIDGET   = widget;
+  DEBUG_MESSAGE_DISPLAY_TEXTEDIT = textEdit;
+  qInstallMessageHandler(debugMessageDisplayFunc);
+}
+
+
+
+// ************** Markdown support *********
+QString markdown_to_html(const QString& markdown) {
+  cmark_gfm_core_extensions_ensure_registered();
+  cmark_parser *parser = cmark_parser_new(CMARK_OPT_DEFAULT);
+
+  const char* extensions[] = {"table", "autolink", "strikethrough"};
+
+  for (const char* extName : extensions) {
+    cmark_syntax_extension *ext = cmark_find_syntax_extension(extName);
+    if (ext) {
+      cmark_parser_attach_syntax_extension(parser, ext);
+    }
+  }
+
+  cmark_parser_feed(parser, markdown.toUtf8().constData(), markdown.length());
+  cmark_node *document = cmark_parser_finish(parser);
+  char *html = cmark_render_html(document, CMARK_OPT_DEFAULT, NULL);
+  QString html_qstring = QString::fromUtf8(html);
+  cmark_parser_free(parser);
+  cmark_node_free(document);
+  free(html);
+  return html_qstring;
+}
 
 // ************** Model classes ************
 class AIModel : public QObject {
@@ -234,7 +321,7 @@ class AIModel : public QObject {
 
  private:
   void make_request(const QString& prompt) {
-    QNetworkRequest request(QUrl("http://localhost:8080/v1/chat/completions"));
+    QNetworkRequest request(QUrl("http://127.0.0.1:8080/v1/chat/completions"));
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setRawHeader("Authorization", "Bearer no-key");
 
@@ -346,10 +433,26 @@ class Server : public QObject {
   Q_OBJECT
  public:
   Server() : m_process(nullptr) {};
+  ~Server() override {
+      m_process->deleteLater();
+  }
+
   void start(const QString& url) {
+    qDebug() << "Server::start";
     m_process = new QProcess(this);
-    m_process->setReadChannel(QProcess::StandardOutput);
-    m_process->setProcessChannelMode(QProcess::MergedChannels);
+    m_process->setProcessChannelMode(QProcess::SeparateChannels);
+
+    // Connect signals to slots (functions)
+    connect(m_process, &QProcess::readyReadStandardOutput, [this]() {
+      QString output = m_process->readAllStandardOutput();
+      qDebug() << "SERVER_STDOUT: " << output;
+    });
+
+    connect(m_process, &QProcess::readyReadStandardError, [this]() {
+      QString errorOutput = m_process->readAllStandardError();
+      qDebug() << "SERVER_STDERR: " << errorOutput;
+    });
+
     m_process->setWorkingDirectory(QCoreApplication::applicationDirPath());
     QStringList arguments;
     auto model_file_path = LocalModelRegistry::resolve_filename(url);
@@ -361,6 +464,7 @@ class Server : public QObject {
     arguments << "-m" << model_file_path << "--port" << QString::number(port);
     auto program =
         QCoreApplication::applicationDirPath() + "/" + QString("server");
+    qDebug() << "Starting " << program << " " << arguments;
     m_process->start(program, arguments);
     connect(m_process, &QProcess::started, this, &Server::processStarted);
     connect(m_process, &QProcess::errorOccurred, this, &Server::processError);
@@ -373,6 +477,8 @@ class Server : public QObject {
   void processStarted() { qDebug() << "Process started successfully"; }
   void processError(QProcess::ProcessError error) {
     qDebug() << "Process had an error: " << error;
+    qDebug() << "Captured stdout:" << m_process->readAllStandardOutput();
+    qDebug() << "Captured stderr:" << m_process->readAllStandardError();
   }
 
  private:
@@ -462,8 +568,11 @@ class ChatView : public QWidget {
 
     auto secondColumnVLayout = new QVBoxLayout();
 
-    m_view_current_answer = new QTextEdit();
-    m_view_current_answer->setText("0.8.8");
+    m_view_current_answer = new QMarkdownTextEdit();
+//    auto font = m_view_current_answer->font();
+//    font.setPointSize(font.pointSize() * 4);
+    //m_view_current_answer->setFont(font);
+
     secondColumnVLayout->addWidget(m_view_current_answer, 5);
 
     auto prompt = new PromptEdit();
@@ -486,7 +595,11 @@ class ChatView : public QWidget {
             QJsonDocument jsonDoc = QJsonDocument::fromJson(rest.toUtf8());
             auto content = jsonDoc["choices"][0]["delta"]["content"];
             m_answer += content.toString();
-            this->m_view_current_answer->setMarkdown(this->m_answer);
+            qDebug() << "answer ==> " << this->m_answer;
+            //auto html = markdown_to_html(m_answer);
+            //qDebug() << "rendered_html ==> " << html;
+            //this->m_view_current_answer->setText(m_answer);
+            //this->m_view_current_answer->setHtml(html);
           }
         });
 
@@ -501,7 +614,7 @@ class ChatView : public QWidget {
  public slots:
   void promptEnteredUpdateUi(const QString& prompt) {
     m_view_prompt->setText("");
-    m_view_current_answer->setText("");
+    //m_view_current_answer->setText("");
     m_answer = "";
     auto m = m_view_questions->model();
     if (m->insertRow(m->rowCount())) {
@@ -514,7 +627,7 @@ class ChatView : public QWidget {
  private:
   QProgressBar* m_progress_bar;
   QListView* m_view_questions;
-  QTextEdit* m_view_current_answer;
+  QMarkdownTextEdit* m_view_current_answer;
   PromptEdit* m_view_prompt;
   QString m_answer;
 };
@@ -573,7 +686,7 @@ class MainWindow : public QMainWindow {
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     m_toolbar->addWidget(spacer);
     add_button("button_4", 3, ":/images/icons8-settings.svg");
-    m_updater.reset(new SparkleAutoUpdater());
+    m_updater.reset(new Updater());
     connect(m_updater.get(), &AutoUpdater::canCheckForUpdatesChanged, this, [this](bool canCheck) {
       qDebug() << "canCheck is " << canCheck;
       m_can_check_updates = canCheck;
@@ -603,9 +716,18 @@ ErrorCode initialize() {
   return ErrorCode::OK;
 }
 
-int main(int argc, char* argv[]) {
+int _main(int argc, char* argv[]) {
+  qDebug() << "Main";
+
   QApplication a(argc, argv);
   MainWindow w;
+  QFont defaultFont;
+  defaultFont.setPointSize(16);
+  QApplication::setFont(defaultFont);
+  QApplication::setQuitOnLastWindowClosed( true );
+
+  // setupDebugDisplay();
+
   w.setGeometry(QRect(0, 0, 1200, 800));
   if (!is_ok(initialize())) {
     qDebug() << "Error initializing";
@@ -613,10 +735,9 @@ int main(int argc, char* argv[]) {
   }
   w.show();
 
-#ifdef Q_OS_MAC
-
-#endif
-  return QApplication::exec();
+  int ret = QApplication::exec();
+  delete DEBUG_MESSAGE_DISPLAY_WIDGET;
+  return ret;
 }
 
 #include "main.moc"

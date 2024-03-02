@@ -4,5 +4,5 @@ ExternalProject_Add(llama
   GIT_SHALLOW    ON
   BUILD_COMMAND cmake --build . --parallel
   INSTALL_COMMAND cmake --install .
-  CMAKE_ARGS     -DCMAKE_INSTALL_PREFIX=${SB_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=Release -D
+  CMAKE_ARGS     -DCMAKE_INSTALL_PREFIX=${SB_INSTALL_PREFIX} -DCMAKE_BUILD_TYPE=Release
 )

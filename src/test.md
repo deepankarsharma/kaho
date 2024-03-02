@@ -1,0 +1,22 @@
+|state| population|
+|---|---|
+|Alabama| 4,485,000|
+|Alaska| 730,000|
+|Arizona| 6,720,000|
+|Arkansas| 2,770,000|
+|California| 39,460,000|
+|Colorado| 5,970,000|
+|Connecticut| 3,470,000|
+|Delaware| 970,000|
+|Florida| 20,320,000|
+|Georgia| 9,820,000|
+|Hawaii| 1,400,000|
+|Idaho| 1,550,000|
+|Illinois| 12,800,000|
+|Indiana| 6,600,000|
+|Iowa| 2,870,000|
+|Kansas| 2,770,000|
+|Kentucky| 4,020,000|
+|Louisiana| 4,980,000|
+|Maine| 1,250,000|
+|Maryland| 5,400,000|

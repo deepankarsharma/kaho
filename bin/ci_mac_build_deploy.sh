@@ -30,5 +30,6 @@ pushd build-${BUILD_TYPE}
     "$CURDIR"/mac_build_dmg.sh
     "$CURDIR"/mac_gen_appcast.sh
     rclone sync /opt/kaho/mac_releases r2:kaho-mac-updates
+    rclone copy /tmp/dmg r2:kaho-mac-updates
 popd
 

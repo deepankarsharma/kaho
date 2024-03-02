@@ -1,0 +1,1 @@
+choco install ninja cmake git nssm StrawberryPerl python310 -y
