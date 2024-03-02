@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 # Make sure you bump version in bin/base.sh when you change this
 # For more details refer to bumping_versions playbook
-project(kaho VERSION 8.1.0 LANGUAGES CXX)
+project(kaho VERSION 1.0.0 LANGUAGES CXX)
 
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE} CMAKE_C_COMPILER: ${CMAKE_C_COMPILER} CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 
@@ -31,18 +31,7 @@ set(KAHO_SB_INSTALL_PREFIX "/opt/kaho/${CMAKE_BUILD_TYPE}")
 
 option(KAHO_MAC_SIGN_APP "Option for signing the Mac app" OFF)
 
-if (APPLE)
-    set(QT_DEFAULT_DIR "$ENV{HOME}/Qt/6.6.1/macos")
-elseif(LINUX)
-    set(QT_DEFAULT_DIR "$ENV{HOME}/Qt/6.6.1")
-elseif(WIN32)
-    set(QT_DEFAULT_DIR "c:/Qt")
-else()
-    MESSAGE(ERROR "Unknown platform")
-endif()
-
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
-list(APPEND CMAKE_PREFIX_PATH ${QT_DEFAULT_DIR})
 list(APPEND CMAKE_PREFIX_PATH ${KAHO_SB_INSTALL_PREFIX})
 
 
@@ -54,9 +43,6 @@ if (APPLE)
 endif()
 
 include(Dependencies)
-
-message(STATUS "Looking for cmark")
-include(FindCmark)
 
 message(STATUS "Looking for qmarkdowntextedit")
 include(Findqmarkdowntextedit)
@@ -102,9 +88,10 @@ if(LINUX)
     )
 endif()
 
-message(STATUS "====> ${QMARKDOWNTEXTEDIT_LIBRARY}")
-set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core cmark::cmark cmark::extensions ${QMARKDOWNTEXTEDIT_LIBRARY})
-set(KAHO_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/external/cmark-gfm/src")
+
+# cmark::cmark cmark::extensions
+set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core ${QMARKDOWNTEXTEDIT_LIBRARY})
+set(KAHO_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include" ${QMARKDOWNTEXTEDIT_INCLUDE_DIR})
 
 if (APPLE)
     list(APPEND KAHO_LIBRARIES ${SPARKLE_LIBRARY})
@@ -249,20 +236,13 @@ if (APPLE)
     )
     add_dependencies(sparkle_framework copy_server)
 
-
-#    add_custom_target(macdeployqt ALL
-#            COMMAND "${QT_DEFAULT_DIR}/bin/macdeployqt" kaho.app
-#            COMMENT "Running macdeployqt"
-#    )
-#    add_dependencies(macdeployqt sparkle_framework)
-
-#    if (KAHO_MAC_SIGN_APP)
-#        message(STATUS "==> Code signing")
-#        add_custom_target(codesign ALL VERBATIM
-#                COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/bin/mac_codesign.sh
-#                COMMENT "Codesign kaho.app"
-#        )
-#        add_dependencies(codesign macdeployqt)
-#    endif()
+    if (KAHO_MAC_SIGN_APP)
+        message(STATUS "==> Code signing")
+        add_custom_target(codesign ALL VERBATIM
+                COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/bin/mac_codesign.sh
+                COMMENT "Codesign kaho.app"
+        )
+        add_dependencies(codesign sparkle_framework)
+    endif()
     set_target_properties(kaho PROPERTIES LINK_FLAGS "-F/Library/Frameworks -Wl -rpath @loader_path/../Frameworks")
 endif ()

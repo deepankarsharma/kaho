@@ -8,6 +8,7 @@ CURDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 # --codesign "Apple Distribution: Deepankar Sharma (VTN5FB5JF7)"
 # --notarize "kaho" \
 create-dmg \
+    --notarize "kaho" \
     --volname "kaho" \
     --volicon "$(kaho_mac_installer_art_dir)/logo.icns" \
     --background "$(kaho_mac_installer_art_dir)/background.tiff" \

@@ -41,9 +41,6 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QWidget>
-#include <cmark-gfm.h>
-#include <cmark-gfm-extension_api.h>
-#include <cmark-gfm-core-extensions.h>
 #include <qplaintextedit.h>
 #include <qmetaobject.h>
 #include <qthread.h>
@@ -300,39 +297,45 @@ void setupDebugDisplay()
 
 
 // ************** Markdown support *********
-QString markdown_to_html(const QString& markdown) {
-  cmark_gfm_core_extensions_ensure_registered();
-  cmark_parser *parser = cmark_parser_new(CMARK_OPT_DEFAULT);
-
-  const char* extensions[] = {"table", "autolink", "strikethrough"};
-
-  for (const char* extName : extensions) {
-    cmark_syntax_extension *ext = cmark_find_syntax_extension(extName);
-    if (ext) {
-      cmark_parser_attach_syntax_extension(parser, ext);
-    }
-  }
-
-  cmark_parser_feed(parser, markdown.toUtf8().constData(), markdown.length());
-  cmark_node *document = cmark_parser_finish(parser);
-  char *html = cmark_render_html(document, CMARK_OPT_DEFAULT, NULL);
-  QString html_qstring = QString::fromUtf8(html);
-  cmark_parser_free(parser);
-  cmark_node_free(document);
-  free(html);
-  return html_qstring;
-}
+//QString markdown_to_html(const QString& markdown) {
+//  cmark_gfm_core_extensions_ensure_registered();
+//  cmark_parser *parser = cmark_parser_new(CMARK_OPT_DEFAULT);
+//
+//  const char* extensions[] = {"table", "autolink", "strikethrough"};
+//
+//  for (const char* extName : extensions) {
+//    cmark_syntax_extension *ext = cmark_find_syntax_extension(extName);
+//    if (ext) {
+//      cmark_parser_attach_syntax_extension(parser, ext);
+//    }
+//  }
+//
+//  cmark_parser_feed(parser, markdown.toUtf8().constData(), markdown.length());
+//  cmark_node *document = cmark_parser_finish(parser);
+//  char *html = cmark_render_html(document, CMARK_OPT_DEFAULT, NULL);
+//  QString html_qstring = QString::fromUtf8(html);
+//  cmark_parser_free(parser);
+//  cmark_node_free(document);
+//  free(html);
+//  return html_qstring;
+//}
 
 // ************** Model classes ************
 class AIModel : public QObject {
   Q_OBJECT
  public:
-  explicit AIModel(QObject* parent = nullptr) : QObject{parent} {
+  explicit AIModel(QObject* parent = nullptr) : QObject{parent}, m_reply(nullptr) {
     m_network_manager = new QNetworkAccessManager(this);
   }
 
  private:
   void make_request(const QString& prompt) {
+    
+    if (m_reply) {
+      m_reply->abort();
+      m_reply = nullptr;
+    }
+
     QNetworkRequest request(QUrl("http://127.0.0.1:8080/v1/chat/completions"));
     request.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     request.setRawHeader("Authorization", "Bearer no-key");
@@ -359,18 +362,18 @@ class AIModel : public QObject {
     QJsonDocument doc(dataObject);
     QByteArray jsonData = doc.toJson();
 
-    QNetworkReply* reply = m_network_manager->post(request, jsonData);
+    m_reply = m_network_manager->post(request, jsonData);
 
-    connect(reply, &QNetworkReply::readyRead, this, [this, reply]() {
-      if (reply->error() == QNetworkReply::NoError) {
-        QByteArray data = reply->readAll();  // Get the response data
+    connect(m_reply, &QNetworkReply::readyRead, this, [this]() {
+      if (m_reply->error() == QNetworkReply::NoError) {
+        QByteArray data = m_reply->readAll();  // Get the response data
         emit answerFragmentReceived(data);
       } else {
-        qDebug() << "Error:" << reply->errorString();
+        qDebug() << "Error:" << m_reply->errorString();
       }
     });
-    connect(reply, &QNetworkReply::finished, this,
-            [reply]() { reply->deleteLater(); });
+    connect(m_reply, &QNetworkReply::finished, this,
+            [this]() { m_reply->deleteLater(); m_reply = nullptr; });
   }
  signals:
   void answerFragmentReceived(const QString& _t1);
@@ -380,6 +383,7 @@ class AIModel : public QObject {
 
  private:
   QNetworkAccessManager* m_network_manager;
+  QNetworkReply* m_reply;
 };
 
 QString extract_filename(const QString& url_) {
@@ -503,7 +507,10 @@ class PromptEdit : public QTextEdit {
   Q_OBJECT
  public:
   PromptEdit() { this->setPlaceholderText("Type a question"); }
-
+  void setPrompt(const QString& prompt) {
+    setText(prompt);
+    emit promptEntered(prompt);
+  }
  protected:
   void keyPressEvent(QKeyEvent* event) override {
     if (event->key() == Qt::Key_Return &&
@@ -516,6 +523,7 @@ class PromptEdit : public QTextEdit {
       QTextEdit::keyPressEvent(event);
     }
   }
+
  signals:
   void promptEntered(const QString& text);
 };
@@ -607,7 +615,7 @@ class ChatView : public QWidget {
             QJsonDocument jsonDoc = QJsonDocument::fromJson(rest.toUtf8());
             auto content = jsonDoc["choices"][0]["delta"]["content"];
             m_answer += content.toString();
-            qDebug() << "answer ==> " << this->m_answer;
+            //qDebug() << "answer ==> " << this->m_answer;
             m_view_current_answer->setText(m_answer);
             //auto html = markdown_to_html(m_answer);
             //qDebug() << "rendered_html ==> " << html;
@@ -615,6 +623,16 @@ class ChatView : public QWidget {
             //this->m_view_current_answer->setHtml(html);
           }
         });
+
+    auto replay_question = [this](const QModelIndex& index) {
+      auto question = m_view_questions->model()->data(index);
+      m_view_prompt->setPrompt(question.toString());
+    };
+    QObject::connect(
+        m_view_questions,
+        &QListView::doubleClicked,
+        this,
+        replay_question);
 
     mainLayout->addLayout(secondColumnVLayout, 3);
 
@@ -630,15 +648,15 @@ class ChatView : public QWidget {
     //m_view_current_answer->setText("");
     m_answer = "";
     auto m = m_view_questions->model();
-    if (m->insertRow(m->rowCount())) {
-      QModelIndex index = m->index(m->rowCount() - 1, 0);
+    if (m->insertRow(0)) {
+      QModelIndex index = m->index(0, 0);
       m->setData(index, prompt);
     }
+    m_view_questions->clearSelection();
     emit promptEnteredUpdateModels(prompt);
   }
 
  private:
-  QProgressBar* m_progress_bar;
   QListView* m_view_questions;
   QMarkdownTextEdit* m_view_current_answer;
   PromptEdit* m_view_prompt;
@@ -693,7 +711,7 @@ class MainWindow : public QMainWindow {
       return;
     };
 
-    add_button("button_1", 0, ":/images/icons8-chat.svg");
+    //add_button("button_1", 0, ":/images/icons8-chat.svg");
 
     auto spacer = new QWidget();
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -714,7 +732,7 @@ class MainWindow : public QMainWindow {
       this->m_toolbar->addWidget(toolButton);
     }
 
-    add_button("button_4", 3, ":/images/icons8-settings.svg");
+    //add_button("button_4", 3, ":/images/icons8-settings.svg");
     m_updater.reset(new Updater());
     connect(m_updater.get(), &AutoUpdater::canCheckForUpdatesChanged, this, [this](bool canCheck) {
       qDebug() << "canCheck is " << canCheck;

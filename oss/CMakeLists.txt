@@ -15,13 +15,6 @@ set(KAHO_SB_INSTALL_PREFIX "/opt/kaho/${CMAKE_BUILD_TYPE}")
 set(KAHO_DEPLOYMENT_BUILD OFF)
 
 option(KAHO_MAC_SIGN_APP "Option for signing the Mac app" OFF)
-if (APPLE)
-    set(QT_DEFAULT_DIR "$ENV{HOME}/Qt/6.6.1/macos")
-elseif()
-    set(QT_DEFAULT_DIR "$ENV{HOME}/Qt/6.6.1")
-else()
-    set(QT_DEFAULT_DIR "c:/Qt")
-endif()
 
 set(KAHO_MAC_BUILD_DMG OFF)
 
