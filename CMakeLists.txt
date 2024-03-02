@@ -58,16 +58,16 @@ include(Dependencies)
 message(STATUS "Looking for cmark")
 include(FindCmark)
 
+message(STATUS "Looking for qmarkdowntextedit")
+include(Findqmarkdowntextedit)
+find_package(qmarkdowntextedit REQUIRED)
 
 if (APPLE)
     message(STATUS "Looking for sparkle")
     include(FindSparkle)
 endif()
 
-include(FindQLiteHtml)
-find_package(qlitehtml REQUIRED)
 
-find_package(QT NAMES Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 
 
@@ -76,10 +76,9 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
 ############ Kaho static library ######################
 qt_standard_project_setup()
 
-set(LITEHTML_BUILD_TESTING OFF)
-add_subdirectory(external/litehtml)
 
 set(PROJECT_SOURCES
+        include/kaho/updater.h
         include/kaho/main.h
         src/main.cpp
 )
@@ -87,20 +86,24 @@ set(PROJECT_SOURCES
 if(WIN32)
     list(APPEND PROJECT_SOURCES
             src/winsparkle_auto_updater.cpp
-            include/kaho/updater.h
     )
 endif()
 
 if(APPLE)
     list(APPEND PROJECT_SOURCES
             src/sparkle_auto_updater.mm
-            include/kaho/updater.h
             ${KAHO_ICON}
     )
 endif()
 
+if(LINUX)
+    list(APPEND PROJECT_SOURCES
+            src/linux_auto_updater.cpp
+    )
+endif()
 
-set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core cmark::cmark cmark::extensions ${QLITEHTML_LIBRARY} litehtml gumbo)
+message(STATUS "====> ${QMARKDOWNTEXTEDIT_LIBRARY}")
+set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core cmark::cmark cmark::extensions ${QMARKDOWNTEXTEDIT_LIBRARY})
 set(KAHO_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include" "${PROJECT_SOURCE_DIR}/external/cmark-gfm/src")
 
 if (APPLE)
@@ -199,11 +202,17 @@ endif()
 
 add_custom_target(copy_server ALL
         COMMAND cmake -E copy ${KAHO_SB_INSTALL_PREFIX}/bin/${SERVER_EXE} $<TARGET_FILE_DIR:kaho>
-        COMMAND cmake -E copy ${KAHO_SB_INSTALL_PREFIX}/bin/ggml-metal.metal $<TARGET_FILE_DIR:kaho>
         COMMENT "Copying server to output directory"
 )
 add_dependencies(copy_server kaho)
 
+if(APPLE)
+    add_custom_target(copy_ggml_metal ALL
+            COMMAND cmake -E copy ${KAHO_SB_INSTALL_PREFIX}/bin/ggml-metal.metal $<TARGET_FILE_DIR:kaho>
+            COMMENT "Copying ggml-metal to output directory"
+    )
+    add_dependencies(copy_ggml_metal copy_server)
+endif()
 
 if (APPLE)
     set(CLEAN_UP_FILES "kaho.app")

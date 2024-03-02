@@ -36,7 +36,7 @@
 #include <QTextEdit>
 #include <QThread>
 #include <QToolButton>
-#include <QToolbar>
+#include <QToolBar>
 #include <QTranslator>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -44,7 +44,6 @@
 #include <cmark-gfm.h>
 #include <cmark-gfm-extension_api.h>
 #include <cmark-gfm-core-extensions.h>
-#include <qlitehtml/qlitehtmlwidget.h>
 #include <qplaintextedit.h>
 #include <qmetaobject.h>
 #include <qthread.h>
@@ -53,6 +52,7 @@
 #include <qdebug.h>
 #include <cstdio>
 #include <cassert>
+#include <qmarkdowntextedit.h>
 
 // ******************** Memory related ***************
 template <typename T>
@@ -568,7 +568,7 @@ class ChatView : public QWidget {
 
     auto secondColumnVLayout = new QVBoxLayout();
 
-    m_view_current_answer = new QLiteHtmlWidget();
+    m_view_current_answer = new QMarkdownTextEdit();
 //    auto font = m_view_current_answer->font();
 //    font.setPointSize(font.pointSize() * 4);
     //m_view_current_answer->setFont(font);
@@ -595,10 +595,11 @@ class ChatView : public QWidget {
             QJsonDocument jsonDoc = QJsonDocument::fromJson(rest.toUtf8());
             auto content = jsonDoc["choices"][0]["delta"]["content"];
             m_answer += content.toString();
-            qDebug() << "markdown ==> " << this->m_answer;
-            auto html = markdown_to_html(m_answer);
-            qDebug() << "rendered_html ==> " << html;
-            this->m_view_current_answer->setHtml(html);
+            qDebug() << "answer ==> " << this->m_answer;
+            //auto html = markdown_to_html(m_answer);
+            //qDebug() << "rendered_html ==> " << html;
+            //this->m_view_current_answer->setText(m_answer);
+            //this->m_view_current_answer->setHtml(html);
           }
         });
 
@@ -626,7 +627,7 @@ class ChatView : public QWidget {
  private:
   QProgressBar* m_progress_bar;
   QListView* m_view_questions;
-  QLiteHtmlWidget* m_view_current_answer;
+  QMarkdownTextEdit* m_view_current_answer;
   PromptEdit* m_view_prompt;
   QString m_answer;
 };
