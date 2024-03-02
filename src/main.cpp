@@ -53,6 +53,18 @@
 #include <cstdio>
 #include <cassert>
 #include <qmarkdowntextedit.h>
+#include <QtPlugin>
+
+#ifdef Q_OS_WIN
+  Q_IMPORT_PLUGIN(QJpegPlugin);
+  Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
+  Q_IMPORT_PLUGIN(QWindowsVistaStylePlugin);
+#elif defined(Q_OS_MAC)
+  Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
+#elif defined(Q_OS_UNIX)
+  //Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
+  Q_IMPORT_PLUGIN(QWaylandIntegrationPlugin);
+#endif
 
 // ******************** Memory related ***************
 template <typename T>
@@ -596,6 +608,7 @@ class ChatView : public QWidget {
             auto content = jsonDoc["choices"][0]["delta"]["content"];
             m_answer += content.toString();
             qDebug() << "answer ==> " << this->m_answer;
+            m_view_current_answer->setText(m_answer);
             //auto html = markdown_to_html(m_answer);
             //qDebug() << "rendered_html ==> " << html;
             //this->m_view_current_answer->setText(m_answer);
@@ -716,10 +729,46 @@ ErrorCode initialize() {
   return ErrorCode::OK;
 }
 
+void initializeFonts() {
+  QStringList fontFamilies = {
+      "Cantarell-Bold.ttf",
+      "Cantarell-BoldItalic.ttf",
+      "Cantarell-Italic.ttf",
+      "Cantarell-Regular.ttf",
+      "Ubuntu-Bold.ttf",
+      "Ubuntu-BoldItalic.ttf",
+      "Ubuntu-Italic.ttf",
+      "Ubuntu-Light.ttf",
+      "Ubuntu-LightItalic.ttf",
+      "Ubuntu-Medium.ttf",
+      "Ubuntu-MediumItalic.ttf",
+      "Ubuntu-Regular.ttf",
+      "UbuntuCondensed-Regular.ttf",
+      "UbuntuMono-Bold.ttf",
+      "UbuntuMono-BoldItalic.ttf",
+      "UbuntuMono-Italic.ttf",
+      "UbuntuMono-Regular.ttf",
+  };
+
+  for (const QString& fontFile : fontFamilies) {
+    // Prepend ":/" to indicate the font is in a resource file
+    auto resourcePath = ":/media/fonts/" + fontFile;
+    qDebug() << "Loading font " << resourcePath;
+    if (QFontDatabase::addApplicationFont(QString(resourcePath)) == -1) {
+      qWarning() << "Failed to load font" << fontFile;
+    }
+  }
+
+  QFont font("Cantarell-Regular");
+  QApplication::setFont(font);
+}
+
 int _main(int argc, char* argv[]) {
   qDebug() << "Main";
 
   QApplication a(argc, argv);
+  initializeFonts();
+
   MainWindow w;
   QFont defaultFont;
   defaultFont.setPointSize(16);

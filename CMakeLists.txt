@@ -111,6 +111,12 @@ if (APPLE)
     list(APPEND KAHO_INCLUDE_DIRS ${SPARKLE_INCLUDE_DIR})
 endif()
 
+if (LINUX)
+    # Qt6::FontDatabaseSupport
+    # Qt6::XcbQpa
+    list(APPEND KAHO_LIBRARIES Qt6::QWaylandIntegrationPlugin)
+endif()
+
 set(OSX_FRAMEWORKS "-framework AppKit -framework Carbon -framework Foundation -framework ApplicationServices -framework Sparkle")
 
 add_library(kaho_static STATIC ${PROJECT_SOURCES})
@@ -133,6 +139,23 @@ set(resource_files
         "media/window-close.svg"
         "media/format-text-superscript.svg"
         "media/go-top.svg"
+        "media/fonts/Cantarell-Bold.ttf"
+        "media/fonts/Cantarell-BoldItalic.ttf"
+        "media/fonts/Cantarell-Italic.ttf"
+        "media/fonts/Cantarell-Regular.ttf"
+        "media/fonts/Ubuntu-Bold.ttf"
+        "media/fonts/Ubuntu-BoldItalic.ttf"
+        "media/fonts/Ubuntu-Italic.ttf"
+        "media/fonts/Ubuntu-Light.ttf"
+        "media/fonts/Ubuntu-LightItalic.ttf"
+        "media/fonts/Ubuntu-Medium.ttf"
+        "media/fonts/Ubuntu-MediumItalic.ttf"
+        "media/fonts/Ubuntu-Regular.ttf"
+        "media/fonts/UbuntuCondensed-Regular.ttf"
+        "media/fonts/UbuntuMono-Bold.ttf"
+        "media/fonts/UbuntuMono-BoldItalic.ttf"
+        "media/fonts/UbuntuMono-Italic.ttf"
+        "media/fonts/UbuntuMono-Regular.ttf"
 )
 
 qt_add_resources(kaho_static "kaho_static"
