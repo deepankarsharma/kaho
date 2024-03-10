@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 # Make sure you bump version in bin/base.sh when you change this
 # For more details refer to bumping_versions playbook
-project(kaho VERSION 1.0.0 LANGUAGES CXX)
+project(kaho VERSION 1.2.0 LANGUAGES CXX)
 
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE} CMAKE_C_COMPILER: ${CMAKE_C_COMPILER} CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 
@@ -13,7 +13,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
+set(KAHO_PYTHON_VERSION "3.10.11")
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -28,8 +28,6 @@ endif()
 
 ############## Kaho specific configuration ##########
 set(KAHO_SB_INSTALL_PREFIX "/opt/kaho/${CMAKE_BUILD_TYPE}")
-
-option(KAHO_MAC_SIGN_APP "Option for signing the Mac app" OFF)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_PREFIX_PATH ${KAHO_SB_INSTALL_PREFIX})
@@ -104,12 +102,78 @@ if (LINUX)
     list(APPEND KAHO_LIBRARIES Qt6::QWaylandIntegrationPlugin)
 endif()
 
+if(APPLE)
+    list(APPEND KAHO_LIBRARIES Qt6::QCocoaIntegrationPlugin)
+    #qt_import_plugins(kaho INCLUDE Qt::QCocoaIntegrationPlugin)
+endif()
+
 set(OSX_FRAMEWORKS "-framework AppKit -framework Carbon -framework Foundation -framework ApplicationServices -framework Sparkle")
 
 add_library(kaho_static STATIC ${PROJECT_SOURCES})
 target_link_libraries(kaho_static PRIVATE ${KAHO_LIBRARIES})
 target_include_directories(kaho_static PUBLIC ${KAHO_INCLUDE_DIRS})
 
+if (UNIX)
+    message(STATUS "Marking kaho_static library for stripping in release build.")
+    set_target_properties(kaho_static PROPERTIES LINK_FLAGS_RELEASE -s)
+endif()
+
+##################### Kaho private exe ######################
+
+set(PROJECT_SOURCES
+        src/public_main.cpp
+        include/kaho/main.h
+)
+
+if(APPLE)
+    set(KAHO_ICON ${CMAKE_CURRENT_SOURCE_DIR}/art/mac_installer/logo.icns)
+    set_source_files_properties(${KAHO_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+    list(APPEND PROJECT_SOURCES
+            ${KAHO_ICON}
+    )
+endif()
+
+qt_add_executable(kaho
+        MANUAL_FINALIZATION
+        ${PROJECT_SOURCES}
+        superbuild/cmake/external_python.cmake
+
+)
+target_include_directories(kaho PUBLIC "${PROJECT_SOURCE_DIR}/include")
+target_link_libraries(kaho PRIVATE kaho_static)
+
+string(TIMESTAMP CURRENT_YEAR "%Y")
+
+
+
+set_target_properties(kaho PROPERTIES
+    ${BUNDLE_ID_OPTION}
+    MACOSX_BUNDLE_BUNDLE_NAME "Kaho"
+    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+    MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
+    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+    MACOSX_BUNDLE_COPYRIGHT "Copyright Deepankar Sharma 2024-${CURRENT_YEAR}"
+    MACOSX_BUNDLE_GUI_IDENTIFIER "io.kaho.kaho"
+    MACOSX_BUNDLE_ICON_FILE "logo"
+    MACOSX_BUNDLE_ICON_NAME "logo"
+    MACOSX_BUNDLE_INFO_STRING "Kaho"
+    MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "p9cmJiv4q1h2CGpArGVFUOw6AJw9+tfL3MMcvo4ut+A="
+    MACOSX_SPARKLE_UPDATE_FEED_URL   "https://mac-updates.kaho.ai/appcast.xml"
+
+    MACOSX_BUNDLE TRUE
+    WIN32_EXECUTABLE TRUE
+)
+
+# if (LINUX)
+#     qt_import_plugins(kaho INCLUDE Qt::QWaylandIntegrationPlugin)
+# endif()
+
+include(GNUInstallDirs)
+install(TARGETS kaho
+    BUNDLE DESTINATION .
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
 
 set(resource_files
         "images/c1.png"
@@ -147,62 +211,12 @@ set(resource_files
         "media/fonts/UbuntuMono-Regular.ttf"
 )
 
-qt_add_resources(kaho_static "kaho_static"
+qt_add_resources(kaho "kaho"
         PREFIX
         "/"
         FILES
         ${resource_files}
 )
-
-##################### Kaho private exe ######################
-
-if(APPLE)
-    set(MACOSX_BUNDLE_ICON_FILE logo.icns)
-    set(KAHO_ICON ${CMAKE_CURRENT_SOURCE_DIR}/art/mac_installer/logo.icns)
-    set_source_files_properties(${KAHO_ICON} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-
-endif()
-
-
-qt_add_executable(kaho
-        MANUAL_FINALIZATION
-        src/public_main.cpp
-        include/kaho/main.h
-)
-target_include_directories(kaho PUBLIC "${PROJECT_SOURCE_DIR}/include")
-target_link_libraries(kaho PRIVATE kaho_static)
-
-string(TIMESTAMP CURRENT_YEAR "%Y")
-
-set_target_properties(kaho PROPERTIES
-    ${BUNDLE_ID_OPTION}
-    MACOSX_BUNDLE_BUNDLE_NAME "Kaho"
-    MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-    MACOSX_BUNDLE_LONG_VERSION_STRING "${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}"
-    MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
-    MACOSX_BUNDLE_COPYRIGHT "Copyright Deepankar Sharma 2024-${CURRENT_YEAR}"
-    MACOSX_BUNDLE_GUI_IDENTIFIER "io.kaho.kaho"
-    MACOSX_BUNDLE_ICON_FILE "logo"
-    MACOSX_BUNDLE_ICON_NAME "logo"
-    MACOSX_BUNDLE_INFO_STRING "Kaho"
-    MACOSX_SPARKLE_UPDATE_PUBLIC_KEY "p9cmJiv4q1h2CGpArGVFUOw6AJw9+tfL3MMcvo4ut+A="
-    MACOSX_SPARKLE_UPDATE_FEED_URL   "https://mac-updates.dz9.org/appcast.xml"
-
-    MACOSX_BUNDLE TRUE
-    WIN32_EXECUTABLE TRUE
-)
-
-# if (LINUX)
-#     qt_import_plugins(kaho INCLUDE Qt::QWaylandIntegrationPlugin)
-# endif()
-
-include(GNUInstallDirs)
-install(TARGETS kaho
-    BUNDLE DESTINATION .
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
-
 qt_finalize_executable(kaho)
 
 
@@ -212,23 +226,37 @@ else()
     set(SERVER_EXE "server")
 endif()
 
+get_target_property(KAHO_TARGET_FILE_DIR kaho TARGET_FILE_DIR)
+
+set(SERVER_DIR "<UNDEFINED>")
+set(PYTHON_CODE_DIR "<UNDEFINED>")
+if(APPLE)
+    set(SERVER_DIR "${CMAKE_BINARY_DIR}/kaho.app/Contents/MacOS/server")
+    set(KAHO_PYTHON_CODE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/python")
+    set(KAHO_PYTHON_CODE_TARGET_DIR "${CMAKE_BINARY_DIR}/kaho.app/Contents/Resources")
+endif()
+
+add_custom_target(copy_python ALL
+        COMMAND cmake -E copy_directory ${KAHO_PYTHON_CODE_SOURCE_DIR}/ ${KAHO_PYTHON_CODE_TARGET_DIR}
+        COMMENT "Copying python code to output directory"
+)
+add_dependencies(copy_python kaho)
+
 add_custom_target(copy_server ALL
         COMMAND cmake -E copy ${KAHO_SB_INSTALL_PREFIX}/bin/${SERVER_EXE} $<TARGET_FILE_DIR:kaho>
         COMMENT "Copying server to output directory"
 )
 add_dependencies(copy_server kaho)
 
-if(APPLE)
-    add_custom_target(copy_ggml_metal ALL
-            COMMAND cmake -E copy ${KAHO_SB_INSTALL_PREFIX}/bin/ggml-metal.metal $<TARGET_FILE_DIR:kaho>
-            COMMENT "Copying ggml-metal to output directory"
-    )
-    add_dependencies(copy_ggml_metal copy_server)
-endif()
+add_executable(embed src/embed.cpp)
+target_link_libraries(embed PRIVATE ${KAHO_LIBRARIES})
+target_include_directories(embed PUBLIC ${KAHO_INCLUDE_DIRS})
 
 if (APPLE)
     set(CLEAN_UP_FILES "kaho.app")
     set_directory_properties(PROPERTIES ADDITIONAL_CLEAN_FILES "${CLEAN_UP_FILES}")
+    set_target_properties(kaho PROPERTIES MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/cmake/mac/Info.plist")
+
 
     add_custom_target(sparkle_framework ALL
             COMMAND mkdir -p "$<TARGET_FILE_DIR:kaho>/../Frameworks/Sparkle.framework" && cp -a ${KAHO_SB_INSTALL_PREFIX}/sparkle/Sparkle.framework $<TARGET_FILE_DIR:kaho>/../Frameworks
@@ -236,13 +264,18 @@ if (APPLE)
     )
     add_dependencies(sparkle_framework copy_server)
 
-    if (KAHO_MAC_SIGN_APP)
-        message(STATUS "==> Code signing")
-        add_custom_target(codesign ALL VERBATIM
-                COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/bin/mac_codesign.sh
-                COMMENT "Codesign kaho.app"
-        )
-        add_dependencies(codesign sparkle_framework)
-    endif()
+
+    add_custom_target(python_framework ALL
+            COMMAND mkdir -p "$<TARGET_FILE_DIR:kaho>/../Frameworks" && cp -a ${KAHO_SB_INSTALL_PREFIX}/python/Python.framework $<TARGET_FILE_DIR:kaho>/../Frameworks
+            COMMENT "Copying Python.framework to output directory"
+    )
+    add_dependencies(python_framework sparkle_framework)
+
+    message(STATUS "==> Code signing")
+    add_custom_target(codesign ALL VERBATIM
+            COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/bin/mac_codesign.sh
+            COMMENT "Codesign kaho.app"
+    )
+    add_dependencies(codesign python_framework)
     set_target_properties(kaho PROPERTIES LINK_FLAGS "-F/Library/Frameworks -Wl -rpath @loader_path/../Frameworks")
 endif ()

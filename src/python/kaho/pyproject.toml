@@ -1,0 +1,40 @@
+[project]
+name = "kaho"
+version = "0.0.1"
+description = "Use AI models for computational tasks"
+authors = [ {name = "Deepankar Sharma", email = "deepankarsharma@gmail.com"}, ]
+readme = "README.md"
+requires-python = ">= 3.11"
+dependencies = [
+    "fastapi",
+    "pydantic",
+    "uvicorn",
+    "llama-index",
+    "langchain",
+    "langchain-community",
+    "langchain-openai",
+    "llama-cpp-python",
+    "numpy",
+    "scipy",
+    "torch",
+    "transformers",
+    "unstructured"
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "mypy",
+    "pytest",
+    "isort",
+]
+
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.black]
+line-length = 100
+
+[tool.isort]
+profile = "hug"

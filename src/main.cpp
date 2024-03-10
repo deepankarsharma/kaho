@@ -48,7 +48,6 @@
 #include <qdatetime.h>
 #include <qdebug.h>
 #include <cstdio>
-#include <cassert>
 #include <qmarkdowntextedit.h>
 #include <QtPlugin>
 
@@ -57,7 +56,7 @@
   Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
   Q_IMPORT_PLUGIN(QWindowsVistaStylePlugin);
 #elif defined(Q_OS_MAC)
-  //Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
+  Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
 #elif defined(Q_OS_UNIX)
   //Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
   Q_IMPORT_PLUGIN(QWaylandIntegrationPlugin);
@@ -445,15 +444,18 @@ int findOpenPort() {
   return -1;  // No open port found
 }
 
-class Server : public QObject {
+class ServerBase : public QObject {
   Q_OBJECT
  public:
-  Server() : m_process(nullptr) {};
-  ~Server() override {
-      m_process->deleteLater();
+  ServerBase() : m_process(nullptr) {};
+  ~ServerBase() override {
+    m_process->deleteLater();
   }
 
-  void start(const QString& url) {
+  virtual QString getProgram() = 0;
+  virtual QStringList getCommandLine() = 0;
+
+  void start() {
     qDebug() << "Server::start";
     m_process = new QProcess(this);
     m_process->setProcessChannelMode(QProcess::SeparateChannels);
@@ -470,20 +472,13 @@ class Server : public QObject {
     });
 
     m_process->setWorkingDirectory(QCoreApplication::applicationDirPath());
-    QStringList arguments;
-    auto model_file_path = LocalModelRegistry::resolve_filename(url);
-    auto port = findOpenPort();
-    if (port < 0) {
-      qDebug() << "Unable to start server since we could not find an open port";
-      return;
-    }
-    arguments << "-m" << model_file_path << "--port" << QString::number(port);
-    auto program =
-        QCoreApplication::applicationDirPath() + "/" + QString("server");
+
+    QStringList arguments = getCommandLine();
+    auto program = getProgram();
     qDebug() << "Starting " << program << " " << arguments;
     m_process->start(program, arguments);
-    connect(m_process, &QProcess::started, this, &Server::processStarted);
-    connect(m_process, &QProcess::errorOccurred, this, &Server::processError);
+    connect(m_process, &QProcess::started, this, &ServerBase::processStarted);
+    connect(m_process, &QProcess::errorOccurred, this, &ServerBase::processError);
   }
 
   void stop() { m_process->terminate(); }
@@ -499,6 +494,46 @@ class Server : public QObject {
 
  private:
   QProcess* m_process;
+};
+
+class LlamaServer : public ServerBase {
+ public:
+  LlamaServer() = default;
+
+  QString getProgram() override {
+    return QCoreApplication::applicationDirPath() + "/" + QString("server");
+  }
+
+  void setUrl(const QString& url) {
+    m_url = url;
+  }
+
+  QStringList getCommandLine() override {
+    QStringList arguments;
+    auto model_file_path = LocalModelRegistry::resolve_filename(m_url);
+    auto port = findOpenPort();
+    if (port < 0) {
+      qDebug() << "Unable to start server since we could not find an open port";
+      return arguments;
+    }
+    arguments << "-m" << model_file_path << "--port" << QString::number(port) << "--embedding";
+    return arguments;
+  }
+
+  QString m_url;
+};
+
+class PythonServer : public ServerBase {
+ public:
+  PythonServer() = default;
+  QString getProgram() override {
+    return QCoreApplication::applicationDirPath() + "/../Resources/bin/run_python_server.sh";;
+  }
+
+  QStringList getCommandLine() override {
+    QStringList arguments;
+    return arguments;
+  }
 };
 
 // ************** Widgets *************
@@ -608,6 +643,7 @@ class ChatView : public QWidget {
 
     QObject::connect(
         aiModel, &AIModel::answerFragmentReceived,
+        this,
         [this](const QString& response) {
           auto first_brace_index = response.indexOf('{');
           if (first_brace_index >= 1) {
@@ -680,7 +716,10 @@ class MainWindow : public QMainWindow {
     m_settings.setValue("model_url", model_url);
 
     LocalModelRegistry::ensureModel(model_url);
-    m_server.start(model_url);
+    m_server.setUrl(model_url);
+    m_server.start();
+
+    m_python_server.start();
 
     m_toolbar = new QToolBar("toolbar");
     m_toolbar->setIconSize(QSize(48, 48));
@@ -702,7 +741,7 @@ class MainWindow : public QMainWindow {
 
       QIcon icon(path);
       toolButton->setIcon(icon);
-      connect(toolButton, &QToolButton::clicked, [this, index] {
+      connect(toolButton, &QToolButton::clicked, this, [this, index] {
         auto widget = this->centralWidget();
         auto stacked = qobject_cast<QStackedWidget*>(widget);
         stacked->setCurrentIndex(index);
@@ -725,7 +764,7 @@ class MainWindow : public QMainWindow {
       QIcon icon(":/images/icons8-upgrade.svg");
       toolButton->setIcon(icon);
 
-      connect(toolButton, &QToolButton::clicked, [this] {
+      connect(toolButton, &QToolButton::clicked, this, [this] {
         m_updater->checkForUpdates();
       });
 
@@ -745,7 +784,8 @@ class MainWindow : public QMainWindow {
  private:
   QToolBar* m_toolbar;
   QSettings m_settings;
-  Server m_server;
+  LlamaServer m_server;
+  PythonServer m_python_server;
   shared_qobject_ptr<AutoUpdater> m_updater;
   bool m_can_check_updates;
 };
@@ -793,7 +833,7 @@ void initializeFonts() {
     }
   }
 
-  QFont font("Cantarell-Regular");
+  QFont font("Cantarell");
   QApplication::setFont(font);
 }
 

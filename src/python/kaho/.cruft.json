@@ -1,0 +1,17 @@
+{
+  "template": "https://github.com/timothycrosley/cookiecutter-python/",
+  "commit": "71391fd9999067ef4b38aa05e7116087fac431f8",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "full_name": "Deepankar Sharma",
+      "email": "deepankarsharma@gmail.com",
+      "github_username": "deepankarsharma",
+      "project_name": "kaho",
+      "description": "Use AI models for computational tasks",
+      "version": "0.0.1",
+      "_template": "https://github.com/timothycrosley/cookiecutter-python/"
+    }
+  },
+  "directory": null
+}

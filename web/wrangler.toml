@@ -1,0 +1,5 @@
+name = "kaho"
+account_id = "901abaa6f1e89c498fab269520dea206"
+
+[site]
+bucket = "./"

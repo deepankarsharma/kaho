@@ -15,4 +15,5 @@ done
 
 cmake ..
 cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DKAHO_MAC_SIGN_APP=ON ..
+
 cmake --build . --parallel

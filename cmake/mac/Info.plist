@@ -23,7 +23,7 @@
 	<string>${MACOSX_BUNDLE_SHORT_VERSION_STRING}</string>
 
 	<key>LSMinimumSystemVersion</key>
-	<string>14.1</string>
+	<string>12.3.0</string>
 
 	<key>NSHumanReadableCopyright</key>
 	<string>${MACOSX_BUNDLE_COPYRIGHT}</string>
@@ -47,19 +47,10 @@
     <string>True</string>
 
     <key>SUPublicEDKey</key>
-    <string>${MACOSX_SPARKLE_UPDATE_PUBLIC_KEY}</string>
+    <string>p9cmJiv4q1h2CGpArGVFUOw6AJw9+tfL3MMcvo4ut+A=</string>
 
     <key>SUFeedURL</key>
-    <string>${MACOSX_SPARKLE_UPDATE_FEED_URL}</string>
-
-	<key>SUEnableAutomaticChecks</key>
-	<true/>
-
-	<key>SUAllowsAutomaticUpdates</key>
-	<true/>
-
-	<key>SUAutomaticallyUpdate</key>
-	<true/>
+    <string>https://mac-updates.kaho.ai/appcast.xml</string>
 
 	<key>SUScheduledCheckInterval</key>
 	<integer>3600</integer>
