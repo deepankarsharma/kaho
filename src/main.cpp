@@ -2,6 +2,7 @@
 #include <QtGlobal>  // Needs to happen before Q_OS_MAC
 #include <kaho/updater.h>
 #include <QApplication>
+#include <QCompleter>
 #include <QCoreApplication>
 #include <QDebug>
 #include <QDir>
@@ -25,7 +26,10 @@
 #include <QProgressBar>
 #include <QProgressDialog>
 #include <QPushButton>
+#include <QRegularExpression>
+#include <QScrollBar>
 #include <QSettings>
+#include <QSqlDatabase>
 #include <QStackedWidget>
 #include <QStandardPaths>
 #include <QStringListModel>
@@ -34,22 +38,29 @@
 #include <QStyleHints>
 #include <QTcpServer>
 #include <QTextEdit>
-#include <QThread>
-#include <QToolButton>
 #include <QToolBar>
+#include <QToolButton>
 #include <QTranslator>
 #include <QUrl>
+#include <QUrlQuery>
 #include <QVBoxLayout>
 #include <QWidget>
-#include <qplaintextedit.h>
-#include <qmetaobject.h>
-#include <qthread.h>
+#include <QtPlugin>
+#include <cstdio>
 #include <qboxlayout.h>
 #include <qdatetime.h>
 #include <qdebug.h>
-#include <cstdio>
 #include <qmarkdowntextedit.h>
-#include <QtPlugin>
+#include <qmetaobject.h>
+#include <qplaintextedit.h>
+#include <qthread.h>
+#include <QScreen>
+//#include <QVideoSink>
+//#include <QMediaCaptureSession>
+//#include <QMediaRecorder>
+#include <QAccessible>
+#include <QAccessibleInterface>
+#include <QAccessibleTextInterface>
 
 #ifdef Q_OS_WIN
   Q_IMPORT_PLUGIN(QJpegPlugin);
@@ -60,6 +71,21 @@
 #elif defined(Q_OS_UNIX)
   //Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
   Q_IMPORT_PLUGIN(QWaylandIntegrationPlugin);
+#endif
+
+// ******************** Logging related **************
+#if defined(Q_OS_MACOS)
+#include <os/log.h>
+
+void apple_os_debug_logger(const QString& msg) {
+  static os_log_t ai_kaho_log = os_log_create("ai.kaho", "app");
+  os_log(ai_kaho_log, "%{public}s", msg.toUtf8().data() );
+}
+
+#define LOG_DEBUG(msg) apple_os_debug_logger(msg)
+#else
+#include <QDebug>
+#define LOG_DEBUG(msg, ...) qDebug(msg, ##__VA_ARGS__)
 #endif
 
 // ******************** Memory related ***************
@@ -186,13 +212,21 @@ QString resolve_path(KahoPath path) {
     filename = "downloaded_file";  // Default fallback name
   }
 
+  QDir dir(downloadDirectory);
+  bool created = dir.mkpath(downloadDirectory);
+  if (created) {
+    LOG_DEBUG("Directory path created successfully.");
+  } else {
+    LOG_DEBUG("Failed to create directory path " + downloadDirectory);
+  }
+
   // Construct the full save path
   QString saveFilePath = QDir(downloadDirectory).filePath(filename);
 
   // Open the file right away for writing
   QFile file(saveFilePath);
   if (!file.open(QIODevice::WriteOnly)) {
-    qDebug() << "Error opening file for writing:" << file.errorString();
+    LOG_DEBUG("Error opening file for writing:" + file.errorString());
     reply->deleteLater();
     manager->deleteLater();
     return ErrorCode::IO_FAILED;
@@ -203,8 +237,6 @@ QString resolve_path(KahoPath path) {
       reply, &QNetworkReply::downloadProgress,
       [&progress, &file, reply](qint64 bytesReceived, qint64 bytesTotal) {
         file.write(reply->readAll());
-        // Update label with download status
-        // Update label with download status (human-readable)
         QString statusText =
             QString(
                 "Downloading model on first run of app...\n\n%1 of %2 "
@@ -237,87 +269,15 @@ QString resolve_path(KahoPath path) {
         return ErrorCode::OK;
       });
 
+  // Connect canceled signal to abort the network request
+  QObject::connect(&progress, &QProgressDialog::canceled, [reply]() {
+    reply->abort();
+  });
+
   progress.exec();  // Show the progress dialog (exec() is blocking)
-  return ErrorCode::OK;
+  return reply->error() == QNetworkReply::NoError ? ErrorCode::OK : ErrorCode::IO_FAILED;
 }
 
-// ************** Debug utilities **********
-
-
-
-QWidget         *DEBUG_MESSAGE_DISPLAY_WIDGET   = NULL;
-QPlainTextEdit  *DEBUG_MESSAGE_DISPLAY_TEXTEDIT = NULL;
-
-
-
-void debugMessageDisplayFunc(QtMsgType type, const QMessageLogContext &context, const QString &msg)
-{
-  QByteArray localMsg = msg.toLocal8Bit();
-  const char *file = context.file ? context.file : "";
-  const char *function = context.function ? context.function : "";
-  switch (type) {
-    case QtDebugMsg:
-      fprintf(stderr, "Debug: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
-      break;
-    case QtInfoMsg:
-      fprintf(stderr, "Info: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
-      break;
-    case QtWarningMsg:
-      fprintf(stderr, "Warning: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
-      break;
-    case QtCriticalMsg:
-      fprintf(stderr, "Critical: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
-      break;
-    case QtFatalMsg:
-      fprintf(stderr, "Fatal: %s (%s:%u, %s)\n", localMsg.constData(), file, context.line, function);
-      break;
-  }
-}
-
-void setupDebugDisplay()
-{
-  auto widget = new QWidget();
-  widget->setWindowTitle( "Debug Log" );
-  widget->setAttribute( Qt::WA_QuitOnClose, false ); //quit only when mainwindow is closed
-  QBoxLayout* layout = new QVBoxLayout();
-  widget->setLayout( layout );
-  auto textEdit = new QPlainTextEdit( widget );
-  QFont font = QFont( "Monospace" );
-  font.setStyleHint(QFont::TypeWriter);
-  textEdit->setFont( font );
-  textEdit->setReadOnly(true);
-  layout->addWidget( textEdit );
-  widget->show();
-  DEBUG_MESSAGE_DISPLAY_WIDGET   = widget;
-  DEBUG_MESSAGE_DISPLAY_TEXTEDIT = textEdit;
-  qInstallMessageHandler(debugMessageDisplayFunc);
-}
-
-
-
-// ************** Markdown support *********
-//QString markdown_to_html(const QString& markdown) {
-//  cmark_gfm_core_extensions_ensure_registered();
-//  cmark_parser *parser = cmark_parser_new(CMARK_OPT_DEFAULT);
-//
-//  const char* extensions[] = {"table", "autolink", "strikethrough"};
-//
-//  for (const char* extName : extensions) {
-//    cmark_syntax_extension *ext = cmark_find_syntax_extension(extName);
-//    if (ext) {
-//      cmark_parser_attach_syntax_extension(parser, ext);
-//    }
-//  }
-//
-//  cmark_parser_feed(parser, markdown.toUtf8().constData(), markdown.length());
-//  cmark_node *document = cmark_parser_finish(parser);
-//  char *html = cmark_render_html(document, CMARK_OPT_DEFAULT, NULL);
-//  QString html_qstring = QString::fromUtf8(html);
-//  cmark_parser_free(parser);
-//  cmark_node_free(document);
-//  free(html);
-//  return html_qstring;
-//}
 
 // ************** Model classes ************
 class AIModel : public QObject {
@@ -357,6 +317,7 @@ class AIModel : public QObject {
     dataObject["messages"] = messagesArray;
     dataObject["model"] = "gpt-3.5-turbo";
     dataObject["stream"] = true;
+    //dataObject["max_tokens"] = 10;
 
     QJsonDocument doc(dataObject);
     QByteArray jsonData = doc.toJson();
@@ -400,19 +361,26 @@ QString url_to_filepath(const QString& url_) {
 
 class LocalModelRegistry {
  public:
+
   static bool modelExists(const QString& url_) {
     auto full_path = url_to_filepath(url_);
+    LOG_DEBUG("Checking if model " + full_path + " exists");
+    LOG_DEBUG(QString::asprintf("Model exists: %d", QFile::exists(full_path)));
     return QFile::exists(full_path);
   }
+
   static ErrorCode downloadModel(const QString& url) {
     return downloadFile(url, resolve_path(KahoPath::ModelsDir));
   }
+
   static ErrorCode ensureModel(const QString& url) {
     if (!modelExists(url)) {
+      LOG_DEBUG("Downloading model because it does not exist");
       return downloadModel(url);
     }
     return ErrorCode::OK;
   }
+
   static QString resolve_filename(const QString& url) {
     return url_to_filepath(url);
   }
@@ -460,7 +428,6 @@ class ServerBase : public QObject {
     m_process = new QProcess(this);
     m_process->setProcessChannelMode(QProcess::SeparateChannels);
 
-    // Connect signals to slots (functions)
     connect(m_process, &QProcess::readyReadStandardOutput, [this]() {
       QString output = m_process->readAllStandardOutput();
       qDebug() << "SERVER_STDOUT: " << output;
@@ -536,80 +503,48 @@ class PythonServer : public ServerBase {
   }
 };
 
+
+
 // ************** Widgets *************
 
-class PromptEdit : public QTextEdit {
+
+class PromptEdit : public QTextEdit
+{
   Q_OBJECT
+ signals:
+  void promptEntered(const QString& text);
  public:
-  PromptEdit() { this->setPlaceholderText("Type a question"); }
+  PromptEdit(QWidget *parent = nullptr): QTextEdit(parent)
+  {
+    setPlaceholderText("Type a question");
+  }
+
   void setPrompt(const QString& prompt) {
     setText(prompt);
     emit promptEntered(prompt);
   }
  protected:
-  void keyPressEvent(QKeyEvent* event) override {
-    if (event->key() == Qt::Key_Return &&
-        event->modifiers() == Qt::ShiftModifier) {
-      qDebug() << "PromptEdit::keyPressEvent => TODO: handle <Shift-Enter>";
-    } else if (event->key() == Qt::Key_Return) {
-      qDebug() << "PromptEdit::keyPressEvent => " << this->toPlainText();
-      emit promptEntered(this->toPlainText());
-    } else {
-      QTextEdit::keyPressEvent(event);
-    }
-  }
 
- signals:
-  void promptEntered(const QString& text);
+  void keyPressEvent(QKeyEvent *e) override
+  {
+    if (e->key() == Qt::Key_Enter || e->key() == Qt::Key_Return) {
+      e->ignore();
+      emit promptEntered(this->toPlainText());
+      return;
+    }
+    QTextEdit::keyPressEvent(e);
+  }
 };
+
 
 class ChatView : public QWidget {
   Q_OBJECT
 
  public:
-  explicit ChatView(QWidget* parent = nullptr) : QWidget(parent) { initializeUi(); }
+  explicit ChatView(QWidget* parent = nullptr) : QWidget(parent), m_question_asked_timestamp(0) { initializeUi(); }
 
  private:
   void initializeUi() {
-    // clang-format off
-            // ┌───────────────────────────────────────────────────────────────────────────────────────────┐
-            // │                                                                                           │
-            // │  ┌─────────────────────────────────────────────┐  ┌─────────────────────────────────────┐ │
-            // │  │  firstColumnLayout                          │  │  secondColumnLayout                 │ │
-            // │  │                                             │  │ ┌────────────────────┐              │ │
-            // │  │ ┌─────────────────────────────────────────┐ │  │ │questionLabel       │              │ │
-            // │  │ │ m_view_questions                        │ │  │ │                    │              │ │
-            // │  │ │                                         │ │  │ └────────────────────┘              │ │
-            // │  │ │                                         │ │  │                                     │ │
-            // │  │ │                                         │ │  │ ┌─────────────────────────────────┐ │ │
-            // │  │ │                                         │ │  │ │m_view_current_question          │ │ │
-            // │  │ │                                         │ │  │ │                                 │ │ │
-            // │  │ │                                         │ │  │ │                                 │ │ │
-            // │  │ │                                         │ │  │ │                                 │ │ │
-            // │  │ │                                         │ │  │ │                                 │ │ │
-            // │  │ │                                         │ │  │ │                                 │ │ │
-            // │  │ │                                         │ │  │ └─────────────────────────────────┘ │ │
-            // │  │ │                                         │ │  │                                     │ │
-            // │  │ │                                         │ │  │ ┌─────────────────────┐             │ │
-            // │  │ │                                         │ │  │ │answerLabel          │             │ │
-            // │  │ │                                         │ │  │ │                     │             │ │
-            // │  │ │                                         │ │  │ └─────────────────────┘             │ │
-            // │  │ │                                         │ │  │                                     │ │
-            // │  │ │                                         │ │  │ ┌─────────────────────────────────┐ │ │
-            // │  │ │                                         │ │  │ │m_view_current_answer            │ │ │
-            // │  │ │                                         │ │  │ │                                 │ │ │
-            // │  │ │                                         │ │  │ │                                 │ │ │
-            // │  │ │                                         │ │  │ └─────────────────────────────────┘ │ │
-            // │  │ │                                         │ │  │                                     │ │
-            // │  │ │                                         │ │  │ ┌─────────────────────────────────┐ │ │
-            // │  │ │                                         │ │  │ │m_view_prompt                    │ │ │
-            // │  │ │                                         │ │  │ │                                 │ │ │
-            // │  │ └─────────────────────────────────────────┘ │  │ └─────────────────────────────────┘ │ │
-            // │  │                                             │  │                                     │ │
-            // │  └─────────────────────────────────────────────┘  └─────────────────────────────────────┘ │
-            // │                                                                                           │
-            // └───────────────────────────────────────────────────────────────────────────────────────────┘
-    // clang-format on
     auto mainLayout = new QHBoxLayout(this);
 
     auto firstColumnVLayout = new QVBoxLayout();
@@ -624,9 +559,6 @@ class ChatView : public QWidget {
     auto secondColumnVLayout = new QVBoxLayout();
 
     m_view_current_answer = new QMarkdownTextEdit();
-//    auto font = m_view_current_answer->font();
-//    font.setPointSize(font.pointSize() * 4);
-    //m_view_current_answer->setFont(font);
 
     secondColumnVLayout->addWidget(m_view_current_answer, 5);
 
@@ -647,16 +579,17 @@ class ChatView : public QWidget {
         [this](const QString& response) {
           auto first_brace_index = response.indexOf('{');
           if (first_brace_index >= 1) {
+            qDebug() << "response => " << response;
             auto rest = response.mid(first_brace_index - 1);
             QJsonDocument jsonDoc = QJsonDocument::fromJson(rest.toUtf8());
             auto content = jsonDoc["choices"][0]["delta"]["content"];
             m_answer += content.toString();
-            //qDebug() << "answer ==> " << this->m_answer;
             m_view_current_answer->setText(m_answer);
-            //auto html = markdown_to_html(m_answer);
-            //qDebug() << "rendered_html ==> " << html;
-            //this->m_view_current_answer->setText(m_answer);
-            //this->m_view_current_answer->setHtml(html);
+//            int wordCount = m_answer.split(QRegularExpression("(\\s|\\n|\\r)+"), Qt::SkipEmptyParts).count();
+//            qint64 currentTime = QDateTime::currentDateTime().toSecsSinceEpoch();
+//            qint64 timeElapsed = currentTime - m_question_asked_timestamp;
+//            double wordsPerSecond = timeElapsed > 0 ? wordCount / static_cast<double>(timeElapsed) : 0;
+//            qDebug() << "Words per sec: " << wordsPerSecond;
           }
         });
 
@@ -680,8 +613,11 @@ class ChatView : public QWidget {
 
  public slots:
   void promptEnteredUpdateUi(const QString& prompt) {
+  
+    QDateTime currentDateTime = QDateTime::currentDateTime();
+    m_question_asked_timestamp = currentDateTime.toSecsSinceEpoch();
+
     m_view_prompt->setText("");
-    //m_view_current_answer->setText("");
     m_answer = "";
     auto m = m_view_questions->model();
     if (m->insertRow(0)) {
@@ -697,6 +633,7 @@ class ChatView : public QWidget {
   QMarkdownTextEdit* m_view_current_answer;
   PromptEdit* m_view_prompt;
   QString m_answer;
+  qint64 m_question_asked_timestamp;
 };
 
 class MainWindow : public QMainWindow {
@@ -714,12 +651,11 @@ class MainWindow : public QMainWindow {
         "https://huggingface.co/TheBloke/OpenHermes-2.5-Mistral-7B-GGUF/"
         "resolve/main/openhermes-2.5-mistral-7b.Q4_K_M.gguf");
     m_settings.setValue("model_url", model_url);
-
+    LOG_DEBUG("MainWindow::MainWindow model_url: " + model_url);
     LocalModelRegistry::ensureModel(model_url);
+
     m_server.setUrl(model_url);
     m_server.start();
-
-    m_python_server.start();
 
     m_toolbar = new QToolBar("toolbar");
     m_toolbar->setIconSize(QSize(48, 48));
@@ -760,6 +696,7 @@ class MainWindow : public QMainWindow {
     {
       auto toolButton = new QToolButton();
       toolButton->setText("Update");
+      toolButton->setToolTip("Check for updates");
 
       QIcon icon(":/images/icons8-upgrade.svg");
       toolButton->setIcon(icon);
@@ -825,9 +762,7 @@ void initializeFonts() {
   };
 
   for (const QString& fontFile : fontFamilies) {
-    // Prepend ":/" to indicate the font is in a resource file
     auto resourcePath = ":/media/fonts/" + fontFile;
-    qDebug() << "Loading font " << resourcePath;
     if (QFontDatabase::addApplicationFont(QString(resourcePath)) == -1) {
       qWarning() << "Failed to load font" << fontFile;
     }
@@ -838,7 +773,7 @@ void initializeFonts() {
 }
 
 int _main(int argc, char* argv[]) {
-  qDebug() << "Main";
+  LOG_DEBUG("main.start");
 
   QApplication a(argc, argv);
   initializeFonts();
@@ -849,17 +784,15 @@ int _main(int argc, char* argv[]) {
   QApplication::setFont(defaultFont);
   QApplication::setQuitOnLastWindowClosed( true );
 
-  // setupDebugDisplay();
-
   w.setGeometry(QRect(0, 0, 1200, 800));
   if (!is_ok(initialize())) {
-    qDebug() << "Error initializing";
+    LOG_DEBUG("Error initializing");
     return -1;
   }
   w.show();
 
   int ret = QApplication::exec();
-  delete DEBUG_MESSAGE_DISPLAY_WIDGET;
+  LOG_DEBUG(QString::asprintf("main.start ret %d", ret));
   return ret;
 }
 

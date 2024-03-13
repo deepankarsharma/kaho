@@ -6,11 +6,15 @@ endif()
 
 set(QPA_FLAG "")
 set(WAYLAND_MODULE "")
+set(LOGGING_BACKEND "")
 if(LINUX)
     set(QPA_FLAG "-qpa wayland,xcb")
     set(WAYLAND_MODULE "qtwayland")
 endif()
 
+if (APPLE)
+    set(LOGGING_BACKEND "-syslog")
+endif()
 
 ExternalProject_Add(qt
   GIT_REPOSITORY "https://github.com/qt/qt5"
@@ -18,7 +22,7 @@ ExternalProject_Add(qt
   GIT_SHALLOW    ON
   GIT_SUBMODULES ""
   BUILD_IN_SOURCE ON
-  CONFIGURE_COMMAND perl <SOURCE_DIR>/init-repository -f -module-subset=qtbase,qtsvg,qtimageformats,${WAYLAND_MODULE} && <SOURCE_DIR>/configure -static -prefix ${SB_INSTALL_PREFIX} -cmake-generator Ninja ${BUILD_TYPE} -nomake examples -nomake tests -qt-libpng -qt-zlib -qt-libjpeg -qt-freetype -qt-pcre -qt-harfbuzz -sql-sqlite -qt-sqlite -no-zstd
+  CONFIGURE_COMMAND perl <SOURCE_DIR>/init-repository -f -module-subset=qtbase,qtsvg,qtimageformats,${WAYLAND_MODULE} && <SOURCE_DIR>/configure -static -prefix ${SB_INSTALL_PREFIX} -cmake-generator Ninja ${BUILD_TYPE} ${LOGGING_BACKEND} -nomake examples -nomake tests -qt-libpng -qt-zlib -qt-libjpeg -qt-freetype -qt-pcre -qt-harfbuzz -sql-sqlite -qt-sqlite -no-zstd
   BUILD_COMMAND cmake --build . --parallel
   INSTALL_COMMAND cmake --install .
 )

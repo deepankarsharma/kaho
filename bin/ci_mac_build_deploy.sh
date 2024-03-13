@@ -24,6 +24,8 @@ if [[ $BUILD_TYPE == "Debug" ]]; then
     DEBUG_FLAG="--debug"
 fi
 
+echo "Build type is ${BUILD_TYPE}"
+
 mkdir build-${BUILD_TYPE}
 pushd build-${BUILD_TYPE}
     "$CURDIR"/ci_build.sh $DEBUG_FLAG

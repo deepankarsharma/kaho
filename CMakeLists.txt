@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.20)
 
 # Make sure you bump version in bin/base.sh when you change this
 # For more details refer to bumping_versions playbook
-project(kaho VERSION 1.2.0 LANGUAGES CXX)
+project(kaho VERSION 1.4.0 LANGUAGES CXX)
 
 message(STATUS "CMAKE_BUILD_TYPE: ${CMAKE_BUILD_TYPE} CMAKE_C_COMPILER: ${CMAKE_C_COMPILER} CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
 
@@ -14,6 +14,9 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(KAHO_PYTHON_VERSION "3.10.11")
+#IF(APPLE)
+#    SET(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "Build architectures for Mac OS X" FORCE)
+#ENDIF(APPLE)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     if (CMAKE_BUILD_TYPE STREQUAL "Debug")
@@ -52,7 +55,7 @@ if (APPLE)
 endif()
 
 
-find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg)
+find_package(Qt6 REQUIRED COMPONENTS Widgets Network Core Svg Sql)
 
 
 
@@ -88,7 +91,7 @@ endif()
 
 
 # cmark::cmark cmark::extensions
-set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core ${QMARKDOWNTEXTEDIT_LIBRARY})
+set(KAHO_LIBRARIES Qt6::Widgets Qt6::Network Qt6::Core Qt6::Sql ${QMARKDOWNTEXTEDIT_LIBRARY})
 set(KAHO_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include" ${QMARKDOWNTEXTEDIT_INCLUDE_DIR})
 
 if (APPLE)
@@ -236,11 +239,11 @@ if(APPLE)
     set(KAHO_PYTHON_CODE_TARGET_DIR "${CMAKE_BINARY_DIR}/kaho.app/Contents/Resources")
 endif()
 
-add_custom_target(copy_python ALL
-        COMMAND cmake -E copy_directory ${KAHO_PYTHON_CODE_SOURCE_DIR}/ ${KAHO_PYTHON_CODE_TARGET_DIR}
-        COMMENT "Copying python code to output directory"
-)
-add_dependencies(copy_python kaho)
+#add_custom_target(copy_python ALL
+#        COMMAND cmake -E copy_directory ${KAHO_PYTHON_CODE_SOURCE_DIR}/ ${KAHO_PYTHON_CODE_TARGET_DIR}
+#        COMMENT "Copying python code to output directory"
+#)
+#add_dependencies(copy_python kaho)
 
 add_custom_target(copy_server ALL
         COMMAND cmake -E copy ${KAHO_SB_INSTALL_PREFIX}/bin/${SERVER_EXE} $<TARGET_FILE_DIR:kaho>
@@ -265,17 +268,17 @@ if (APPLE)
     add_dependencies(sparkle_framework copy_server)
 
 
-    add_custom_target(python_framework ALL
-            COMMAND mkdir -p "$<TARGET_FILE_DIR:kaho>/../Frameworks" && cp -a ${KAHO_SB_INSTALL_PREFIX}/python/Python.framework $<TARGET_FILE_DIR:kaho>/../Frameworks
-            COMMENT "Copying Python.framework to output directory"
-    )
-    add_dependencies(python_framework sparkle_framework)
+#    add_custom_target(python_framework ALL
+#            COMMAND mkdir -p "$<TARGET_FILE_DIR:kaho>/../Frameworks" && cp -a ${KAHO_SB_INSTALL_PREFIX}/python/Python.framework $<TARGET_FILE_DIR:kaho>/../Frameworks
+#            COMMENT "Copying Python.framework to output directory"
+#    )
+#    add_dependencies(python_framework sparkle_framework)
 
     message(STATUS "==> Code signing")
     add_custom_target(codesign ALL VERBATIM
             COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/bin/mac_codesign.sh
             COMMENT "Codesign kaho.app"
     )
-    add_dependencies(codesign python_framework)
+    add_dependencies(codesign sparkle_framework)
     set_target_properties(kaho PROPERTIES LINK_FLAGS "-F/Library/Frameworks -Wl -rpath @loader_path/../Frameworks")
 endif ()

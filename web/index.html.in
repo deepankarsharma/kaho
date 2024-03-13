@@ -21,7 +21,7 @@
         h1 {
             font-family: 'Noto Serif Display', serif; 
             font-weight: bold; 
-            font-size: 48px;
+            font-size: 64px;
             margin-bottom: 20px;
             color: black; 
         }
@@ -29,6 +29,7 @@
         .download-links {
             display: flex;
             gap: 30px;
+            margin-bottom: 20px;
         }
 
         a {
@@ -38,11 +39,20 @@
         }
 
         .coming-soon {
-            margin-top: 30px; /* Adjust spacing as needed */
         }
 
         .disabled i { /* Target the icon within the Linux link */
             color: gray
+        }
+
+        .description {
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 10px;
+            font-family: 'Noto Serif Display', serif; 
+            font-size: 24px;
+            margin-bottom: 20px;
+            color: black; 
         }
     </style>
 </head>
@@ -54,7 +64,10 @@
         <a href="#" class="disabled"><i class="fab fa-windows"></i></a> 
         <a href="#" class="disabled"><i class="fab fa-linux"></i></a> 
     </div>
-
-    <p class="coming-soon">Linux and Windows support coming soon!</p> 
+    <div class="description">
+        <p>Kaho allows you to run LLM apps directly on your computer. Available for ARM Macs. Intel Macs, Linux and Windows support coming soon!</p>
+         
+    </div>
+    <p class="coming-soon"></p> 
 </body>
 </html>

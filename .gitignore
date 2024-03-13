@@ -66,3 +66,4 @@ third_party
 
 .DS_Store
 release-build
+.fseventsd
