@@ -1,6 +1,6 @@
 ExternalProject_Add(qmarkdowntextedit
         GIT_REPOSITORY "https://github.com/pbek/qmarkdowntextedit.git"
-        GIT_TAG        "6dc71db95691361ff74222276d308f443dde5a69"  # b2137
+        GIT_TAG        "e30c97859b2c208d76d7f520d51f47e7cc8a67e2"
         GIT_SHALLOW    ON
         BUILD_COMMAND cmake --build . --parallel
         INSTALL_COMMAND cmake --install .

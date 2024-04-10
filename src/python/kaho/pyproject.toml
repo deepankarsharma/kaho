@@ -19,7 +19,11 @@ dependencies = [
     "scipy",
     "torch",
     "transformers",
-    "unstructured"
+    "unstructured",
+    "pyside6",
+    "enaml",
+    "qtpy",
+    "PyQtAds"
 ]
 
 [project.optional-dependencies]

@@ -30,14 +30,11 @@ if [[ "$(uname)" == "Darwin" ]]; then
     cp -a ~/.pyenv/versions/$PYTHON_VERSION/Library/Frameworks/Python.framework $SB_INSTALL_PREFIX/python
 
 elif [[ -f "/etc/debian_version" ]]; then
-    echo "Detected Debian-based system. Installing dependencies using apt..."
-
-    # Update the package list
-    sudo apt update
-
-    # Install the build dependencies for Python
-    sudo apt build-dep python$PYTHON_VERSION
-
+    if [ ! -d "$HOME/.pyenv" ]; then
+        echo "Detected Debian-based system. Installing dependencies using apt..."
+        curl https://pyenv.run | bash
+        pyenv install -s $PYTHON_VERSION
+    fi
 elif [[ -f "/etc/redhat-release" || -f "/etc/fedora-release" ]]; then
     echo "Detected RPM-based system. Installing dependencies using dnf or yum..."
 

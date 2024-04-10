@@ -24,6 +24,7 @@ if (APPLE)
     include(external_sparkle)
 endif ()
 
+include(external_qt_docking_framework)
 include(external_python)
 include(external_llama)
 include(external_cmark_gfm)

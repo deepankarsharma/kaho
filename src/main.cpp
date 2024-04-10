@@ -1,6 +1,13 @@
 
-#include <QtGlobal>  // Needs to happen before Q_OS_MAC
 #include <kaho/updater.h>
+#include <qboxlayout.h>
+#include <qdatetime.h>
+#include <qdebug.h>
+#include <qmarkdowntextedit.h>
+#include <qmetaobject.h>
+#include <qplaintextedit.h>
+#include <qthread.h>
+
 #include <QApplication>
 #include <QCompleter>
 #include <QCoreApplication>
@@ -27,6 +34,7 @@
 #include <QProgressDialog>
 #include <QPushButton>
 #include <QRegularExpression>
+#include <QScreen>
 #include <QScrollBar>
 #include <QSettings>
 #include <QSqlDatabase>
@@ -45,32 +53,25 @@
 #include <QUrlQuery>
 #include <QVBoxLayout>
 #include <QWidget>
+#include <QtGlobal>  // Needs to happen before Q_OS_MAC
 #include <QtPlugin>
 #include <cstdio>
-#include <qboxlayout.h>
-#include <qdatetime.h>
-#include <qdebug.h>
-#include <qmarkdowntextedit.h>
-#include <qmetaobject.h>
-#include <qplaintextedit.h>
-#include <qthread.h>
-#include <QScreen>
-//#include <QVideoSink>
-//#include <QMediaCaptureSession>
-//#include <QMediaRecorder>
+// #include <QVideoSink>
+// #include <QMediaCaptureSession>
+// #include <QMediaRecorder>
 #include <QAccessible>
 #include <QAccessibleInterface>
 #include <QAccessibleTextInterface>
 
 #ifdef Q_OS_WIN
-  Q_IMPORT_PLUGIN(QJpegPlugin);
-  Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
-  Q_IMPORT_PLUGIN(QWindowsVistaStylePlugin);
+Q_IMPORT_PLUGIN(QJpegPlugin);
+Q_IMPORT_PLUGIN(QWindowsIntegrationPlugin);
+Q_IMPORT_PLUGIN(QWindowsVistaStylePlugin);
 #elif defined(Q_OS_MAC)
-  Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
+Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
 #elif defined(Q_OS_UNIX)
-  //Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
-  Q_IMPORT_PLUGIN(QWaylandIntegrationPlugin);
+// Q_IMPORT_PLUGIN(QXcbIntegrationPlugin);
+Q_IMPORT_PLUGIN(QWaylandIntegrationPlugin);
 #endif
 
 // ******************** Logging related **************
@@ -79,13 +80,13 @@
 
 void apple_os_debug_logger(const QString& msg) {
   static os_log_t ai_kaho_log = os_log_create("ai.kaho", "app");
-  os_log(ai_kaho_log, "%{public}s", msg.toUtf8().data() );
+  os_log(ai_kaho_log, "%{public}s", msg.toUtf8().data());
 }
 
 #define LOG_DEBUG(msg) apple_os_debug_logger(msg)
 #else
 #include <QDebug>
-#define LOG_DEBUG(msg, ...) qDebug(msg, ##__VA_ARGS__)
+#define LOG_DEBUG(msg) qDebug() << msg
 #endif
 
 // ******************** Memory related ***************
@@ -93,44 +94,43 @@ template <typename T>
 using unique_qobject_ptr = QScopedPointer<T, QScopedPointerDeleteLater>;
 
 /**
- * A shared pointer class with shared pointer semantics intended for derivates of QObject
- * Calls deleteLater() instead of destroying the contained object immediately
+ * A shared pointer class with shared pointer semantics intended for derivates
+ * of QObject Calls deleteLater() instead of destroying the contained object
+ * immediately
  */
 template <typename T>
 class shared_qobject_ptr : public QSharedPointer<T> {
  public:
   constexpr explicit shared_qobject_ptr() : QSharedPointer<T>() {}
-  constexpr explicit shared_qobject_ptr(T* ptr) : QSharedPointer<T>(ptr, &QObject::deleteLater) {}
-  constexpr shared_qobject_ptr(std::nullptr_t null_ptr) : QSharedPointer<T>(null_ptr, &QObject::deleteLater) {}
+  constexpr explicit shared_qobject_ptr(T* ptr)
+      : QSharedPointer<T>(ptr, &QObject::deleteLater) {}
+  constexpr shared_qobject_ptr(std::nullptr_t null_ptr)
+      : QSharedPointer<T>(null_ptr, &QObject::deleteLater) {}
 
   template <typename Derived>
-  constexpr shared_qobject_ptr(const shared_qobject_ptr<Derived>& other) : QSharedPointer<T>(other)
-  {}
+  constexpr shared_qobject_ptr(const shared_qobject_ptr<Derived>& other)
+      : QSharedPointer<T>(other) {}
 
   template <typename Derived>
-  constexpr shared_qobject_ptr(const QSharedPointer<Derived>& other) : QSharedPointer<T>(other)
-  {}
+  constexpr shared_qobject_ptr(const QSharedPointer<Derived>& other)
+      : QSharedPointer<T>(other) {}
 
   void reset() { QSharedPointer<T>::reset(); }
-  void reset(T*&& other)
-  {
+  void reset(T*&& other) {
     shared_qobject_ptr<T> t(other);
     this->swap(t);
   }
-  void reset(const shared_qobject_ptr<T>& other)
-  {
+  void reset(const shared_qobject_ptr<T>& other) {
     shared_qobject_ptr<T> t(other);
     this->swap(t);
   }
 };
 
 template <typename T, typename... Args>
-shared_qobject_ptr<T> makeShared(Args... args)
-{
+shared_qobject_ptr<T> makeShared(Args... args) {
   auto obj = new T(args...);
   return shared_qobject_ptr<T>(obj);
 }
-
 
 // ******************* Error Handling ****************
 #define RETURN_ON_ERROR(condition, return_value, error_message) \
@@ -192,7 +192,6 @@ QString resolve_path(KahoPath path) {
   }
   return "";
 }
-
 
 [[nodiscard]] ErrorCode downloadFile(const QUrl& url,
                                      const QString& downloadDirectory) {
@@ -270,26 +269,25 @@ QString resolve_path(KahoPath path) {
       });
 
   // Connect canceled signal to abort the network request
-  QObject::connect(&progress, &QProgressDialog::canceled, [reply]() {
-    reply->abort();
-  });
+  QObject::connect(&progress, &QProgressDialog::canceled,
+                   [reply]() { reply->abort(); });
 
   progress.exec();  // Show the progress dialog (exec() is blocking)
-  return reply->error() == QNetworkReply::NoError ? ErrorCode::OK : ErrorCode::IO_FAILED;
+  return reply->error() == QNetworkReply::NoError ? ErrorCode::OK
+                                                  : ErrorCode::IO_FAILED;
 }
-
 
 // ************** Model classes ************
 class AIModel : public QObject {
   Q_OBJECT
  public:
-  explicit AIModel(QObject* parent = nullptr) : QObject{parent}, m_reply(nullptr) {
+  explicit AIModel(QObject* parent = nullptr)
+      : QObject{parent}, m_reply(nullptr) {
     m_network_manager = new QNetworkAccessManager(this);
   }
 
  private:
   void make_request(const QString& prompt) {
-    
     if (m_reply) {
       m_reply->abort();
       m_reply = nullptr;
@@ -317,7 +315,7 @@ class AIModel : public QObject {
     dataObject["messages"] = messagesArray;
     dataObject["model"] = "gpt-3.5-turbo";
     dataObject["stream"] = true;
-    //dataObject["max_tokens"] = 10;
+    // dataObject["max_tokens"] = 10;
 
     QJsonDocument doc(dataObject);
     QByteArray jsonData = doc.toJson();
@@ -332,8 +330,10 @@ class AIModel : public QObject {
         qDebug() << "Error:" << m_reply->errorString();
       }
     });
-    connect(m_reply, &QNetworkReply::finished, this,
-            [this]() { m_reply->deleteLater(); m_reply = nullptr; });
+    connect(m_reply, &QNetworkReply::finished, this, [this]() {
+      m_reply->deleteLater();
+      m_reply = nullptr;
+    });
   }
  signals:
   void answerFragmentReceived(const QString& _t1);
@@ -361,7 +361,6 @@ QString url_to_filepath(const QString& url_) {
 
 class LocalModelRegistry {
  public:
-
   static bool modelExists(const QString& url_) {
     auto full_path = url_to_filepath(url_);
     LOG_DEBUG("Checking if model " + full_path + " exists");
@@ -391,8 +390,7 @@ class NonEditableStringListModel : public QStringListModel {
  public:
   explicit NonEditableStringListModel(QObject* parent = nullptr)
       : QStringListModel(parent) {}
-  [[nodiscard]]
-  Qt::ItemFlags flags(const QModelIndex& index) const override {
+  [[nodiscard]] Qt::ItemFlags flags(const QModelIndex& index) const override {
     return QStringListModel::flags(index) & ~Qt::ItemIsEditable;
   }
 };
@@ -415,10 +413,8 @@ int findOpenPort() {
 class ServerBase : public QObject {
   Q_OBJECT
  public:
-  ServerBase() : m_process(nullptr) {};
-  ~ServerBase() override {
-    m_process->deleteLater();
-  }
+  ServerBase() : m_process(nullptr){};
+  ~ServerBase() override { m_process->deleteLater(); }
 
   virtual QString getProgram() = 0;
   virtual QStringList getCommandLine() = 0;
@@ -445,7 +441,8 @@ class ServerBase : public QObject {
     qDebug() << "Starting " << program << " " << arguments;
     m_process->start(program, arguments);
     connect(m_process, &QProcess::started, this, &ServerBase::processStarted);
-    connect(m_process, &QProcess::errorOccurred, this, &ServerBase::processError);
+    connect(m_process, &QProcess::errorOccurred, this,
+            &ServerBase::processError);
   }
 
   void stop() { m_process->terminate(); }
@@ -471,9 +468,7 @@ class LlamaServer : public ServerBase {
     return QCoreApplication::applicationDirPath() + "/" + QString("server");
   }
 
-  void setUrl(const QString& url) {
-    m_url = url;
-  }
+  void setUrl(const QString& url) { m_url = url; }
 
   QStringList getCommandLine() override {
     QStringList arguments;
@@ -483,7 +478,8 @@ class LlamaServer : public ServerBase {
       qDebug() << "Unable to start server since we could not find an open port";
       return arguments;
     }
-    arguments << "-m" << model_file_path << "--port" << QString::number(port) << "--embedding";
+    arguments << "-m" << model_file_path << "--port" << QString::number(port)
+              << "--embedding";
     return arguments;
   }
 
@@ -494,7 +490,9 @@ class PythonServer : public ServerBase {
  public:
   PythonServer() = default;
   QString getProgram() override {
-    return QCoreApplication::applicationDirPath() + "/../Resources/bin/run_python_server.sh";;
+    return QCoreApplication::applicationDirPath() +
+           "/../Resources/bin/run_python_server.sh";
+    ;
   }
 
   QStringList getCommandLine() override {
@@ -503,19 +501,15 @@ class PythonServer : public ServerBase {
   }
 };
 
-
-
 // ************** Widgets *************
 
-
-class PromptEdit : public QTextEdit
-{
+class PromptEdit : public QTextEdit {
   Q_OBJECT
  signals:
   void promptEntered(const QString& text);
+
  public:
-  PromptEdit(QWidget *parent = nullptr): QTextEdit(parent)
-  {
+  PromptEdit(QWidget* parent = nullptr) : QTextEdit(parent) {
     setPlaceholderText("Type a question");
   }
 
@@ -523,10 +517,9 @@ class PromptEdit : public QTextEdit
     setText(prompt);
     emit promptEntered(prompt);
   }
- protected:
 
-  void keyPressEvent(QKeyEvent *e) override
-  {
+ protected:
+  void keyPressEvent(QKeyEvent* e) override {
     if (e->key() == Qt::Key_Enter || e->key() == Qt::Key_Return) {
       e->ignore();
       emit promptEntered(this->toPlainText());
@@ -536,12 +529,14 @@ class PromptEdit : public QTextEdit
   }
 };
 
-
 class ChatView : public QWidget {
   Q_OBJECT
 
  public:
-  explicit ChatView(QWidget* parent = nullptr) : QWidget(parent), m_question_asked_timestamp(0) { initializeUi(); }
+  explicit ChatView(QWidget* parent = nullptr)
+      : QWidget(parent), m_question_asked_timestamp(0) {
+    initializeUi();
+  }
 
  private:
   void initializeUi() {
@@ -574,8 +569,7 @@ class ChatView : public QWidget {
                      &AIModel::processPrompt);
 
     QObject::connect(
-        aiModel, &AIModel::answerFragmentReceived,
-        this,
+        aiModel, &AIModel::answerFragmentReceived, this,
         [this](const QString& response) {
           auto first_brace_index = response.indexOf('{');
           if (first_brace_index >= 1) {
@@ -585,11 +579,15 @@ class ChatView : public QWidget {
             auto content = jsonDoc["choices"][0]["delta"]["content"];
             m_answer += content.toString();
             m_view_current_answer->setText(m_answer);
-//            int wordCount = m_answer.split(QRegularExpression("(\\s|\\n|\\r)+"), Qt::SkipEmptyParts).count();
-//            qint64 currentTime = QDateTime::currentDateTime().toSecsSinceEpoch();
-//            qint64 timeElapsed = currentTime - m_question_asked_timestamp;
-//            double wordsPerSecond = timeElapsed > 0 ? wordCount / static_cast<double>(timeElapsed) : 0;
-//            qDebug() << "Words per sec: " << wordsPerSecond;
+            //            int wordCount =
+            //            m_answer.split(QRegularExpression("(\\s|\\n|\\r)+"),
+            //            Qt::SkipEmptyParts).count(); qint64 currentTime =
+            //            QDateTime::currentDateTime().toSecsSinceEpoch();
+            //            qint64 timeElapsed = currentTime -
+            //            m_question_asked_timestamp; double wordsPerSecond =
+            //            timeElapsed > 0 ? wordCount /
+            //            static_cast<double>(timeElapsed) : 0; qDebug() <<
+            //            "Words per sec: " << wordsPerSecond;
           }
         });
 
@@ -597,11 +595,8 @@ class ChatView : public QWidget {
       auto question = m_view_questions->model()->data(index);
       m_view_prompt->setPrompt(question.toString());
     };
-    QObject::connect(
-        m_view_questions,
-        &QListView::doubleClicked,
-        this,
-        replay_question);
+    QObject::connect(m_view_questions, &QListView::doubleClicked, this,
+                     replay_question);
 
     mainLayout->addLayout(secondColumnVLayout, 3);
 
@@ -613,7 +608,6 @@ class ChatView : public QWidget {
 
  public slots:
   void promptEnteredUpdateUi(const QString& prompt) {
-  
     QDateTime currentDateTime = QDateTime::currentDateTime();
     m_question_asked_timestamp = currentDateTime.toSecsSinceEpoch();
 
@@ -686,7 +680,7 @@ class MainWindow : public QMainWindow {
       return;
     };
 
-    //add_button("button_1", 0, ":/images/icons8-chat.svg");
+    // add_button("button_1", 0, ":/images/icons8-chat.svg");
 
     auto spacer = new QWidget();
     spacer->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
@@ -701,19 +695,19 @@ class MainWindow : public QMainWindow {
       QIcon icon(":/images/icons8-upgrade.svg");
       toolButton->setIcon(icon);
 
-      connect(toolButton, &QToolButton::clicked, this, [this] {
-        m_updater->checkForUpdates();
-      });
+      connect(toolButton, &QToolButton::clicked, this,
+              [this] { m_updater->checkForUpdates(); });
 
       this->m_toolbar->addWidget(toolButton);
     }
 
-    //add_button("button_4", 3, ":/images/icons8-settings.svg");
+    // add_button("button_4", 3, ":/images/icons8-settings.svg");
     m_updater.reset(new Updater());
-    connect(m_updater.get(), &AutoUpdater::canCheckForUpdatesChanged, this, [this](bool canCheck) {
-      qDebug() << "canCheck is " << canCheck;
-      m_can_check_updates = canCheck;
-    });
+    connect(m_updater.get(), &AutoUpdater::canCheckForUpdatesChanged, this,
+            [this](bool canCheck) {
+              qDebug() << "canCheck is " << canCheck;
+              m_can_check_updates = canCheck;
+            });
   }
 
   ~MainWindow() override { m_server.stop(); }
@@ -782,15 +776,13 @@ int _main(int argc, char* argv[]) {
   QFont defaultFont;
   defaultFont.setPointSize(16);
   QApplication::setFont(defaultFont);
-  QApplication::setQuitOnLastWindowClosed( true );
-
+  QApplication::setQuitOnLastWindowClosed(true);
   w.setGeometry(QRect(0, 0, 1200, 800));
   if (!is_ok(initialize())) {
     LOG_DEBUG("Error initializing");
     return -1;
   }
   w.show();
-
   int ret = QApplication::exec();
   LOG_DEBUG(QString::asprintf("main.start ret %d", ret));
   return ret;
